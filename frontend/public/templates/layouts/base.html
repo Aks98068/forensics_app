@@ -1,0 +1,83 @@
+{{ define "base" }}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {{ if .Title }}
+            {{ .Title }} | {{ .AppName }}
+        {{ else }}
+            {{ .AppName }}
+        {{ end }}
+    </title>
+
+    {{ if .Description }}
+
+    <meta
+        name="description"
+        content="{{ .Description }}"
+    >
+
+    {{ end }}
+
+
+    <!-- ===================================================== -->
+    <!-- APPLICATION CSS                                      -->
+    <!-- ===================================================== -->
+
+    <link rel="stylesheet" href="/css/animation.css">
+    <link rel="stylesheet" href="/css/navbar.css">
+
+    <link rel="stylesheet" href="/css/output.css">
+
+</head>
+
+
+<body class="min-h-screen bg-[#F7F4EE] text-[#171A1F]">
+
+
+    <!-- ===================================================== -->
+    <!-- NAVBAR                                                -->
+    <!-- ===================================================== -->
+
+    {{ template "navbar" . }}
+
+
+    <!-- ===================================================== -->
+    <!-- PAGE CONTENT                                          -->
+    <!-- ===================================================== -->
+
+    <main class="min-h-screen pt-20">
+
+        {{ template "content" . }}
+
+    </main>
+
+
+    <!-- ===================================================== -->
+    <!-- FOOTER                                                -->
+    <!-- ===================================================== -->
+
+    {{ template "footer" . }}
+
+
+    <!-- ===================================================== -->
+    <!-- APPLICATION JAVASCRIPT                                -->
+    <!-- ===================================================== -->
+
+    <script src="/js/app.js"></script>
+    <script src="/js/navbar.js"></script>
+    <script src="/js/footer.js"></script>
+
+</body>
+
+</html>
+{{ end }}

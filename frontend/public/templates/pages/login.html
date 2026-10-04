@@ -1,0 +1,578 @@
+
+{{ define "content" }}
+
+<div class="min-h-screen bg-[#F7F4EE] px-4 py-8 sm:px-6 lg:px-8">
+
+    <div class="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl overflow-hidden rounded-[2rem] border border-[#E2DED5] bg-white shadow-[0_25px_80px_rgba(23,26,31,0.10)] lg:grid-cols-2">
+
+        <!-- ============================================================
+             LEFT: BRAND / INVESTIGATION PANEL
+             ============================================================ -->
+
+        <div class="relative hidden overflow-hidden bg-[#171A1F] p-10 text-white lg:flex lg:flex-col lg:justify-between xl:p-14">
+
+            <!-- Background decoration -->
+
+            <div class="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full border border-white/5"></div>
+
+            <div class="pointer-events-none absolute -bottom-40 -left-32 h-96 w-96 rounded-full border border-[#F97316]/10"></div>
+
+
+            <div class="relative z-10">
+
+                <!-- Brand -->
+
+                <div class="mb-12">
+
+                    <div class="mb-5 inline-flex items-center rounded-full border border-[#F97316]/30 bg-[#F97316]/10 px-3 py-1.5">
+
+                        <span class="mr-2 h-1.5 w-1.5 rounded-full bg-[#F97316]"></span>
+
+                        <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-[#F97316]">
+                            Digital Forensics Platform
+                        </span>
+
+                    </div>
+
+
+                    <h1 class="max-w-xl text-4xl font-black leading-[1.05] tracking-[-0.04em] text-white xl:text-5xl">
+
+                        Investigate.
+
+                        <span class="text-[#F97316]">
+                            Preserve.
+                        </span>
+
+                        Prove.
+
+                    </h1>
+
+
+                    <p class="mt-6 max-w-lg text-sm leading-7 text-white/60">
+                        A professional digital forensics environment for collecting,
+                        preserving, analyzing, and documenting digital evidence with
+                        investigation-focused workflows.
+                    </p>
+
+                </div>
+
+
+                <!-- Features -->
+
+                <div class="space-y-5">
+
+                    <div class="flex items-start gap-4">
+
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5">
+
+                            <svg
+                                class="h-5 w-5 text-[#F97316]"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.8"
+                                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v2h8z"
+                                />
+
+                            </svg>
+
+                        </div>
+
+
+                        <div>
+
+                            <h3 class="text-sm font-bold text-white">
+                                Evidence Integrity
+                            </h3>
+
+                            <p class="mt-1 text-xs leading-5 text-white/45">
+                                Maintain evidence integrity and traceable investigation records.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="flex items-start gap-4">
+
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5">
+
+                            <svg
+                                class="h-5 w-5 text-[#F97316]"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.8"
+                                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 3c-2.755 0-5.29.93-7.318 2.484A11.95 11.95 0 003 12c0 1.657.337 3.236.949 4.668M21 12c0 1.657-.337 3.236-.949 4.668M3.95 7.05A11.95 11.95 0 003 12m18 0a11.95 11.95 0 00-3.95-8.95"
+                                />
+
+                            </svg>
+
+                        </div>
+
+
+                        <div>
+
+                            <h3 class="text-sm font-bold text-white">
+                                Investigation Workflow
+                            </h3>
+
+                            <p class="mt-1 text-xs leading-5 text-white/45">
+                                Organize investigations, evidence, findings, and reports in one place.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="flex items-start gap-4">
+
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5">
+
+                            <svg
+                                class="h-5 w-5 text-[#F97316]"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.8"
+                                    d="M9 17v-2a4 4 0 014-4h2m4 6v-2a4 4 0 00-4-4h-1M9 7a3 3 0 116 0v1a3 3 0 01-6 0V7z"
+                                />
+
+                            </svg>
+
+                        </div>
+
+
+                        <div>
+
+                            <h3 class="text-sm font-bold text-white">
+                                Investigator Access
+                            </h3>
+
+                            <p class="mt-1 text-xs leading-5 text-white/45">
+                                Access investigation tools through a controlled and secure workspace.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Investigation preview -->
+
+                <div class="mt-12 rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+
+                    <div class="mb-4 flex items-center justify-between">
+
+                        <div>
+
+                            <p class="text-[9px] font-bold uppercase tracking-[0.18em] text-white/35">
+                                Investigation Workspace
+                            </p>
+
+                            <p class="mt-1 text-xs font-semibold text-white/75">
+                                Evidence Analysis
+                            </p>
+
+                        </div>
+
+
+                        <span class="rounded-full border border-[#0F766E]/30 bg-[#0F766E]/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-[#5EEAD4]">
+                            Protected
+                        </span>
+
+                    </div>
+
+
+                    <div class="space-y-2">
+
+                        <div class="flex items-center justify-between rounded-lg bg-white/[0.035] px-3 py-2.5">
+
+                            <span class="text-[10px] text-white/50">
+                                Evidence Collection
+                            </span>
+
+                            <span class="text-[10px] font-semibold text-[#5EEAD4]">
+                                Verified
+                            </span>
+
+                        </div>
+
+
+                        <div class="flex items-center justify-between rounded-lg bg-white/[0.035] px-3 py-2.5">
+
+                            <span class="text-[10px] text-white/50">
+                                Hash Integrity
+                            </span>
+
+                            <span class="text-[10px] font-semibold text-[#5EEAD4]">
+                                SHA-256
+                            </span>
+
+                        </div>
+
+
+                        <div class="flex items-center justify-between rounded-lg bg-white/[0.035] px-3 py-2.5">
+
+                            <span class="text-[10px] text-white/50">
+                                Chain of Custody
+                            </span>
+
+                            <span class="text-[10px] font-semibold text-[#F97316]">
+                                Tracked
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Bottom information -->
+
+            <div class="relative z-10 mt-10 flex items-center justify-between border-t border-white/10 pt-6">
+
+                <div>
+
+                    <p class="text-[9px] font-bold uppercase tracking-[0.18em] text-white/30">
+                        Secure Investigation Environment
+                    </p>
+
+                    <p class="mt-1 text-xs text-white/45">
+                        Built for digital evidence workflows.
+                    </p>
+
+                </div>
+
+
+                <div class="flex items-center gap-2">
+
+                    <span class="h-2 w-2 rounded-full bg-[#0F766E]"></span>
+
+                    <span class="text-[10px] font-semibold text-white/50">
+                        System Ready
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================================
+             RIGHT: LOGIN
+             ============================================================ -->
+
+        <div class="flex items-center justify-center p-6 sm:p-10 lg:p-14">
+
+            <div class="w-full max-w-md">
+
+                <!-- Login header -->
+
+                <div class="mb-10">
+
+                    <div class="mb-6 inline-flex items-center rounded-full border border-[#E2DED5] bg-[#F7F4EE] px-3 py-1.5">
+
+                        <span class="mr-2 h-1.5 w-1.5 rounded-full bg-[#0F766E]"></span>
+
+                        <span class="text-[10px] font-bold uppercase tracking-[0.16em] text-[#777773]">
+                            Secure Investigator Access
+                        </span>
+
+                    </div>
+
+
+                    <h2 class="text-3xl font-black tracking-[-0.04em] text-[#171A1F] sm:text-4xl">
+                        Welcome back.
+                    </h2>
+
+
+                    <p class="mt-3 text-sm leading-6 text-[#777773]">
+                        Sign in to access your digital forensics workspace and investigations.
+                    </p>
+
+                </div>
+
+
+                <!-- Error message -->
+
+                <div
+                    id="loginError"
+                    class="mb-6 hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                ></div>
+
+
+                <!-- Login form -->
+
+                <form
+                    id="loginForm"
+                    class="space-y-5"
+                    novalidate
+                >
+
+                    <!-- Email -->
+
+                    <div>
+
+                        <label
+                            for="identifier"
+                            class="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-[#171A1F]"
+                        >
+                            Email Address
+                        </label>
+
+
+                        <input
+                            id="identifier"
+                            name="identifier"
+                            type="email"
+                            autocomplete="email"
+                            required
+                            maxlength="255"
+                            placeholder="investigator@example.com"
+                            class="w-full rounded-xl border border-[#E2DED5] bg-white px-4 py-3.5 text-sm text-[#171A1F] outline-none transition placeholder:text-[#AAA79F] focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                        />
+
+                    </div>
+
+
+                    <!-- Password -->
+
+                    <div>
+
+                        <div class="mb-2 flex items-center justify-between">
+
+                            <label
+                                for="password"
+                                class="block text-xs font-bold uppercase tracking-[0.12em] text-[#171A1F]"
+                            >
+                                Password
+                            </label>
+
+
+                            <a
+                                href="/forgot-password"
+                                class="text-xs font-semibold text-[#F97316] transition hover:text-[#c2410c]"
+                            >
+                                Forgot password?
+                            </a>
+
+                        </div>
+
+
+                        <div class="relative">
+
+                            <input
+                                id="password"
+                                name="password"
+                                type="password"
+                                autocomplete="current-password"
+                                required
+                                maxlength="128"
+                                placeholder="Enter your password"
+                                class="w-full rounded-xl border border-[#E2DED5] bg-white px-4 py-3.5 pr-12 text-sm text-[#171A1F] outline-none transition placeholder:text-[#AAA79F] focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                            />
+
+
+                            <button
+                                type="button"
+                                id="togglePassword"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-[#777773] transition hover:bg-[#F7F4EE] hover:text-[#171A1F]"
+                                aria-label="Show password"
+                            >
+
+                                <svg
+                                    id="eyeIcon"
+                                    class="h-5 w-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="1.8"
+                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                    />
+
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="1.8"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                    />
+
+                                </svg>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Submit -->
+
+                    <button
+                        type="submit"
+                        id="loginButton"
+                        class="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#171A1F] px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#252A31] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+
+                        <span id="loginButtonText">
+                            Sign in to workspace
+                        </span>
+
+
+                        <svg
+                            id="loginSpinner"
+                            class="hidden h-4 w-4 animate-spin"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                        >
+
+                            <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"
+                            ></circle>
+
+
+                            <path
+                                class="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                            ></path>
+
+                        </svg>
+
+                    </button>
+
+                </form>
+
+
+                <!-- Register -->
+
+                <div class="mt-7 text-center">
+
+                    <p class="text-sm text-[#777773]">
+
+                        Don't have an investigator account?
+
+                        <a
+                            href="/register"
+                            class="font-bold text-[#F97316] transition hover:text-[#c2410c]"
+                        >
+                            Create account
+                        </a>
+
+                    </p>
+
+                </div>
+
+
+                <!-- Security note -->
+
+                <div class="mt-10 rounded-xl border border-[#E2DED5] bg-[#F7F4EE] p-4">
+
+                    <div class="flex items-start gap-3">
+
+                        <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#0F766E]/10">
+
+                            <svg
+                                class="h-4 w-4 text-[#0F766E]"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.8"
+                                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v2h8z"
+                                />
+
+                            </svg>
+
+                        </div>
+
+
+                        <div>
+
+                            <p class="text-xs font-bold text-[#171A1F]">
+                                Protected access
+                            </p>
+
+                            <p class="mt-1 text-[11px] leading-5 text-[#777773]">
+                                Your investigator session is protected using secure authentication controls.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Mobile trust information -->
+
+                <div class="mt-8 text-center lg:hidden">
+
+                    <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-[#AAA79F]">
+                        FORENSIQ
+                    </p>
+
+                    <p class="mt-1 text-xs text-[#777773]">
+                        Digital Forensics Platform
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     EXTERNAL LOGIN JAVASCRIPT
+     ============================================================ -->
+
+<script
+    src="/js/login.js"
+    defer
+></script>
+
+{{ end }}
+

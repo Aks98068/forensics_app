@@ -1,0 +1,685 @@
+{{ define "content" }}
+
+<div class="space-y-8">
+
+    <!-- ========================================================= -->
+    <!-- PAGE HEADER -->
+    <!-- ========================================================= -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+        <div>
+            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#F97316]">
+                FORENSIQ
+            </p>
+
+            <h1 class="mt-2 text-3xl font-bold tracking-tight text-[#171A1F] sm:text-4xl">
+                Welcome back{{ if .User }}, {{ .User.Name }}{{ end }}
+            </h1>
+
+            <p class="mt-2 max-w-2xl text-sm leading-6 text-[#626A73]">
+                Your digital forensics workspace. Monitor investigations,
+                preserve evidence, and manage forensic activities from one place.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+
+            <a
+                href="/dashboard/cases"
+                class="inline-flex items-center justify-center rounded-xl bg-[#F97316] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#ea580c]"
+            >
+                <svg
+                    class="mr-2 h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path d="M12 5v14"></path>
+                    <path d="M5 12h14"></path>
+                </svg>
+
+                View Cases
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================================= -->
+    <!-- ACCOUNT / ROLE CARD -->
+    <!-- ========================================================= -->
+    <div class="rounded-2xl border border-[#E2DED5] bg-white p-5 shadow-sm">
+
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+            <div class="flex items-center gap-4">
+
+                <div
+                    class="flex h-12 w-12 items-center justify-center rounded-xl bg-[#FFF1E8] text-[#F97316]"
+                >
+                    <svg
+                        class="h-6 w-6"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path d="M20 21a8 8 0 0 0-16 0"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+
+                <div>
+                    <p class="text-sm font-semibold text-[#171A1F]">
+                        {{ if .User }}{{ .User.Name }}{{ else }}Forensic User{{ end }}
+                    </p>
+
+                    <p class="text-sm text-[#777773]">
+                        {{ if .User }}{{ .User.Email }}{{ end }}
+                    </p>
+                </div>
+
+            </div>
+
+            <div>
+                {{ if .User }}
+
+                    {{ if eq .User.Role "ADMIN" }}
+                    <span class="inline-flex items-center rounded-full bg-[#FFF1E8] px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-[#F97316]">
+                        Administrator
+                    </span>
+
+                    {{ else if eq .User.Role "ANALYST" }}
+                    <span class="inline-flex items-center rounded-full bg-[#E6F4F2] px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-[#0F766E]">
+                        Analyst
+                    </span>
+
+                    {{ else }}
+                    <span class="inline-flex items-center rounded-full bg-[#F1F3F5] px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-[#626A73]">
+                        User
+                    </span>
+
+                    {{ end }}
+
+                {{ end }}
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================================= -->
+    <!-- STATISTICS -->
+    <!-- ========================================================= -->
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+
+        <!-- Cases -->
+        <div class="rounded-2xl border border-[#E2DED5] bg-white p-5 shadow-sm">
+
+            <div class="flex items-center justify-between">
+
+                <div>
+                    <p class="text-sm font-medium text-[#777773]">
+                        Active Cases
+                    </p>
+
+                    <p class="mt-2 text-3xl font-bold text-[#171A1F]">
+                        0
+                    </p>
+                </div>
+
+                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFF1E8] text-[#F97316]">
+
+                    <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path d="M3 7h6l2 2h10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <path d="M3 7V5a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+
+                </div>
+
+            </div>
+
+            <a
+                href="/dashboard/cases"
+                class="mt-4 inline-flex text-xs font-semibold text-[#F97316] hover:underline"
+            >
+                View cases →
+            </a>
+
+        </div>
+
+
+        <!-- Evidence -->
+        <div class="rounded-2xl border border-[#E2DED5] bg-white p-5 shadow-sm">
+
+            <div class="flex items-center justify-between">
+
+                <div>
+                    <p class="text-sm font-medium text-[#777773]">
+                        Evidence Items
+                    </p>
+
+                    <p class="mt-2 text-3xl font-bold text-[#171A1F]">
+                        0
+                    </p>
+                </div>
+
+                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E6F4F2] text-[#0F766E]">
+
+                    <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path d="M12 2v20"></path>
+                        <path d="M5 7h14"></path>
+                        <path d="M5 17h14"></path>
+                    </svg>
+
+                </div>
+
+            </div>
+
+            <a
+                href="/dashboard/evidence"
+                class="mt-4 inline-flex text-xs font-semibold text-[#0F766E] hover:underline"
+            >
+                View evidence →
+            </a>
+
+        </div>
+
+
+        <!-- Reports -->
+        <div class="rounded-2xl border border-[#E2DED5] bg-white p-5 shadow-sm">
+
+            <div class="flex items-center justify-between">
+
+                <div>
+                    <p class="text-sm font-medium text-[#777773]">
+                        Reports
+                    </p>
+
+                    <p class="mt-2 text-3xl font-bold text-[#171A1F]">
+                        0
+                    </p>
+                </div>
+
+                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F1F3F5] text-[#626A73]">
+
+                    <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <path d="M14 2v6h6"></path>
+                        <path d="M8 13h8"></path>
+                        <path d="M8 17h6"></path>
+                    </svg>
+
+                </div>
+
+            </div>
+
+            <a
+                href="/dashboard/reports"
+                class="mt-4 inline-flex text-xs font-semibold text-[#626A73] hover:underline"
+            >
+                View reports →
+            </a>
+
+        </div>
+
+
+        <!-- Activity -->
+        <div class="rounded-2xl border border-[#E2DED5] bg-white p-5 shadow-sm">
+
+            <div class="flex items-center justify-between">
+
+                <div>
+                    <p class="text-sm font-medium text-[#777773]">
+                        Recent Activity
+                    </p>
+
+                    <p class="mt-2 text-3xl font-bold text-[#171A1F]">
+                        0
+                    </p>
+                </div>
+
+                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFF1E8] text-[#F97316]">
+
+                    <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <path d="M12 7v5l3 2"></path>
+                    </svg>
+
+                </div>
+
+            </div>
+
+            <a
+                href="/dashboard/activity"
+                class="mt-4 inline-flex text-xs font-semibold text-[#F97316] hover:underline"
+            >
+                View activity →
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================================= -->
+    <!-- MAIN WORKSPACE -->
+    <!-- ========================================================= -->
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+
+        <!-- Recent Cases -->
+        <div class="xl:col-span-2 rounded-2xl border border-[#E2DED5] bg-white shadow-sm">
+
+            <div class="flex items-center justify-between border-b border-[#E2DED5] px-6 py-5">
+
+                <div>
+                    <h2 class="text-lg font-bold text-[#171A1F]">
+                        Recent Cases
+                    </h2>
+
+                    <p class="mt-1 text-sm text-[#777773]">
+                        Your latest forensic investigations.
+                    </p>
+                </div>
+
+                <a
+                    href="/dashboard/cases"
+                    class="text-sm font-semibold text-[#F97316] hover:underline"
+                >
+                    View all
+                </a>
+
+            </div>
+
+            <div class="p-6">
+
+                <div class="flex min-h-[220px] flex-col items-center justify-center text-center">
+
+                    <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFF1E8] text-[#F97316]">
+
+                        <svg
+                            class="h-7 w-7"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path d="M3 7h6l2 2h10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <path d="M3 7V5a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+
+                    </div>
+
+                    <h3 class="mt-4 text-base font-semibold text-[#171A1F]">
+                        No cases yet
+                    </h3>
+
+                    <p class="mt-1 max-w-sm text-sm leading-6 text-[#777773]">
+                        Your recent forensic cases will appear here once
+                        investigations are created.
+                    </p>
+
+                    <a
+                        href="/dashboard/cases"
+                        class="mt-5 inline-flex items-center rounded-xl border border-[#E2DED5] bg-[#F7F4EE] px-4 py-2.5 text-sm font-semibold text-[#171A1F] transition hover:bg-[#FFF1E8] hover:text-[#F97316]"
+                    >
+                        Open case workspace
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Quick Actions -->
+        <div class="rounded-2xl border border-[#E2DED5] bg-white shadow-sm">
+
+            <div class="border-b border-[#E2DED5] px-6 py-5">
+
+                <h2 class="text-lg font-bold text-[#171A1F]">
+                    Quick Actions
+                </h2>
+
+                <p class="mt-1 text-sm text-[#777773]">
+                    Frequently used forensic tools.
+                </p>
+
+            </div>
+
+            <div class="space-y-3 p-5">
+
+                <a
+                    href="/dashboard/cases"
+                    class="group flex items-center gap-4 rounded-xl border border-[#E2DED5] p-4 transition hover:border-[#F97316] hover:bg-[#FFF1E8]"
+                >
+
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FFF1E8] text-[#F97316] group-hover:bg-white">
+
+                        <svg
+                            class="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path d="M12 5v14"></path>
+                            <path d="M5 12h14"></path>
+                        </svg>
+
+                    </div>
+
+                    <div>
+                        <p class="text-sm font-semibold text-[#171A1F]">
+                            Manage Cases
+                        </p>
+
+                        <p class="text-xs text-[#777773]">
+                            Create and review investigations
+                        </p>
+                    </div>
+
+                </a>
+
+
+                <a
+                    href="/dashboard/evidence"
+                    class="group flex items-center gap-4 rounded-xl border border-[#E2DED5] p-4 transition hover:border-[#0F766E] hover:bg-[#E6F4F2]"
+                >
+
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E6F4F2] text-[#0F766E] group-hover:bg-white">
+
+                        <svg
+                            class="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path d="M12 2v20"></path>
+                            <path d="M5 7h14"></path>
+                            <path d="M5 17h14"></path>
+                        </svg>
+
+                    </div>
+
+                    <div>
+                        <p class="text-sm font-semibold text-[#171A1F]">
+                            Evidence
+                        </p>
+
+                        <p class="text-xs text-[#777773]">
+                            Manage forensic evidence
+                        </p>
+                    </div>
+
+                </a>
+
+
+                <a
+                    href="/dashboard/reports"
+                    class="group flex items-center gap-4 rounded-xl border border-[#E2DED5] p-4 transition hover:border-[#E2DED5] hover:bg-[#F7F4EE]"
+                >
+
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F1F3F5] text-[#626A73] group-hover:bg-white">
+
+                        <svg
+                            class="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <path d="M14 2v6h6"></path>
+                            <path d="M8 13h8"></path>
+                            <path d="M8 17h6"></path>
+                        </svg>
+
+                    </div>
+
+                    <div>
+                        <p class="text-sm font-semibold text-[#171A1F]">
+                            Reports
+                        </p>
+
+                        <p class="text-xs text-[#777773]">
+                            Review forensic reports
+                        </p>
+                    </div>
+
+                </a>
+
+
+                <a
+                    href="/dashboard/activity"
+                    class="group flex items-center gap-4 rounded-xl border border-[#E2DED5] p-4 transition hover:border-[#E2DED5] hover:bg-[#F7F4EE]"
+                >
+
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F1F3F5] text-[#626A73] group-hover:bg-white">
+
+                        <svg
+                            class="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <circle cx="12" cy="12" r="9"></circle>
+                            <path d="M12 7v5l3 2"></path>
+                        </svg>
+
+                    </div>
+
+                    <div>
+                        <p class="text-sm font-semibold text-[#171A1F]">
+                            Activity
+                        </p>
+
+                        <p class="text-xs text-[#777773]">
+                            Review your recent actions
+                        </p>
+                    </div>
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================================= -->
+    <!-- ROLE-SPECIFIC WORKSPACE -->
+    <!-- ========================================================= -->
+
+    {{ if .User }}
+
+        {{ if or (eq .User.Role "ANALYST") (eq .User.Role "ADMIN") }}
+
+        <div class="rounded-2xl border border-[#E2DED5] bg-white p-6 shadow-sm">
+
+            <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+
+                <div class="flex items-start gap-4">
+
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#E6F4F2] text-[#0F766E]">
+
+                        <svg
+                            class="h-6 w-6"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"></path>
+                            <path d="M9 12l2 2 4-4"></path>
+                        </svg>
+
+                    </div>
+
+                    <div>
+
+                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-[#0F766E]">
+                            Analyst Workspace
+                        </p>
+
+                        <h2 class="mt-1 text-lg font-bold text-[#171A1F]">
+                            Advanced forensic operations
+                        </h2>
+
+                        <p class="mt-1 max-w-2xl text-sm leading-6 text-[#777773]">
+                            Access analyst-level investigations, evidence processing,
+                            forensic reports, and operational activity.
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <a
+                    href="/analyst"
+                    class="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#0F766E] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0b625d]"
+                >
+                    Open Analyst Workspace
+                </a>
+
+            </div>
+
+        </div>
+
+        {{ end }}
+
+
+        {{ if eq .User.Role "ADMIN" }}
+
+        <div class="rounded-2xl border border-[#E2DED5] bg-white p-6 shadow-sm">
+
+            <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+
+                <div class="flex items-start gap-4">
+
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#FFF1E8] text-[#F97316]">
+
+                        <svg
+                            class="h-6 w-6"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"></path>
+                            <path d="M12 8v4"></path>
+                            <path d="M12 16h.01"></path>
+                        </svg>
+
+                    </div>
+
+                    <div>
+
+                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-[#F97316]">
+                            Administration
+                        </p>
+
+                        <h2 class="mt-1 text-lg font-bold text-[#171A1F]">
+                            System administration
+                        </h2>
+
+                        <p class="mt-1 max-w-2xl text-sm leading-6 text-[#777773]">
+                            Manage users, system operations, forensic records,
+                            audit logs, and platform settings.
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <a
+                    href="/admin"
+                    class="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#F97316] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#ea580c]"
+                >
+                    Open Admin Panel
+                </a>
+
+            </div>
+
+        </div>
+
+        {{ end }}
+
+    {{ end }}
+
+
+    <!-- ========================================================= -->
+    <!-- SECURITY NOTICE -->
+    <!-- ========================================================= -->
+    <div class="rounded-2xl border border-[#E2DED5] bg-[#171A1F] p-6 text-white shadow-sm">
+
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F97316]">
+
+                <svg
+                    class="h-5 w-5 text-white"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"></path>
+                    <path d="M9 12l2 2 4-4"></path>
+                </svg>
+
+            </div>
+
+            <div>
+
+                <p class="text-sm font-bold">
+                    Evidence integrity matters
+                </p>
+
+                <p class="mt-1 text-sm leading-6 text-[#D8D5CF]">
+                    FORENSIQ is designed around secure forensic workflows,
+                    evidence preservation, accountability, and traceability.
+                    Always maintain proper chain-of-custody procedures when
+                    handling digital evidence.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{{ end }}
