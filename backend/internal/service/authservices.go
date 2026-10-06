@@ -35,7 +35,7 @@ type AuthService struct {
 	emailservice             *EmailService
 	authtokenservice         *AuthTokenService
 	passwordResetService     *PasswordResetService
-	appURL                   string
+	EmailURL                   string
 }
 type LoginResult struct {
 	User   *models.User
@@ -57,7 +57,7 @@ func NewAuthService(
 	emailverificationservice *EmailVerificationService,
 	emailservice *EmailService,
 	authtokenservice *AuthTokenService,
-	appURL string,
+	EmailURL string,
 	passwordResetService *PasswordResetService,
 ) *AuthService {
 	return &AuthService{
@@ -67,7 +67,7 @@ func NewAuthService(
 		emailservice:             emailservice,
 		authtokenservice:         authtokenservice,
 		passwordResetService:     passwordResetService,
-		appURL:                   strings.TrimRight(appURL, "/"),
+		EmailURL:                   strings.TrimRight(EmailURL, "/"),
 	}
 }
 
@@ -227,7 +227,7 @@ func (s *AuthService) Register(
 	// 8. Build verification URL
 	// ------------------------------------------------------------
 
-	verificationURL := s.appURL +
+	verificationURL := s.EmailURL +
 		"/verify-email?token=" +
 		verificationToken
 

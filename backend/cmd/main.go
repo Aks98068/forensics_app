@@ -2,11 +2,11 @@ package main
 
 import (
 	"log"
+	"os"
 	"time"
 
 	"github.com/Aks98068/forensics/internal/configs"
 	"github.com/Aks98068/forensics/internal/database"
-	"github.com/Aks98068/forensics/internal/frontend"
 	"github.com/Aks98068/forensics/internal/handlres"
 	middleware "github.com/Aks98068/forensics/internal/middlewares"
 	"github.com/Aks98068/forensics/internal/repository"
@@ -18,36 +18,30 @@ import (
 )
 
 func main() {
-
-	// ============================================================
-	// CONFIGURATION
-	// ============================================================
+	const appName = "Forencis"
 
 	cfg, err := configs.Load()
 	if err != nil {
 		log.Fatalf("configuration error: %v", err)
 	}
 
-	// ============================================================
-	// DATABASE
-	// ============================================================
+	nextURL := os.Getenv("NEXT_URL")
+	if nextURL == "" {
+		nextURL = "http://127.0.0.1:3001"
+	}
 
 	db, err := database.Connect(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("database error: %v", err)
+		log.Fatalf("database connection error: %v", err)
 	}
 
 	log.Println("MySQL database connected successfully")
 
 	if err := database.MigrateDB(db); err != nil {
-		log.Fatalf("migration error: %v", err)
+		log.Fatalf("database migration error: %v", err)
 	}
 
-	log.Println("database migrated successfully")
-
-	// ============================================================
-	// REPOSITORIES
-	// ============================================================
+	log.Println("database migration completed successfully")
 
 	userRepository := repository.NewUserRepository(db)
 
@@ -60,10 +54,6 @@ func main() {
 	passwordResetRepository :=
 		repository.NewPasswordResetRepository(db)
 
-	// ============================================================
-	// SECURITY
-	// ============================================================
-
 	passwordHasher := security.Newpassword()
 
 	tokenService := security.NewTokenService(
@@ -71,10 +61,6 @@ func main() {
 		time.Duration(cfg.JWTAccessTTLMinutes)*time.Minute,
 		time.Duration(cfg.JWTRefreshTTLDays)*24*time.Hour,
 	)
-
-	// ============================================================
-	// EMAIL SERVICE
-	// ============================================================
 
 	emailService := service.NewEmailService(
 		cfg.SMTPHost,
@@ -84,21 +70,13 @@ func main() {
 		cfg.SMTPFrom,
 	)
 
-	// ============================================================
-	// EMAIL VERIFICATION
-	// ============================================================
-
 	emailVerificationService :=
 		service.NewEmailVerificationService(
 			emailVerificationRepository,
 			userRepository,
 			emailService,
-			cfg.AppURL,
+			cfg.EmailURL,
 		)
-
-	// ============================================================
-	// PASSWORD RESET
-	// ============================================================
 
 	passwordResetService :=
 		service.NewPasswordResetService(
@@ -110,18 +88,10 @@ func main() {
 			time.Duration(cfg.PasswordResetTTLMinutes)*time.Minute,
 		)
 
-	// ============================================================
-	// AUTH TOKEN SERVICE
-	// ============================================================
-
 	authTokenService := service.NewAuthTokenService(
 		tokenService,
 		refreshTokenRepository,
 	)
-
-	// ============================================================
-	// AUTH SERVICE
-	// ============================================================
 
 	authService := service.NewAuthService(
 		userRepository,
@@ -129,21 +99,13 @@ func main() {
 		emailVerificationService,
 		emailService,
 		authTokenService,
-		cfg.AppURL,
+		cfg.EmailURL,
 		passwordResetService,
 	)
-
-	// ============================================================
-	// USER SERVICE
-	// ============================================================
 
 	userService := service.NewUserService(
 		userRepository,
 	)
-
-	// ============================================================
-	// HANDLERS
-	// ============================================================
 
 	authHandler := handlres.NewAuthHandler(
 		authService,
@@ -153,20 +115,12 @@ func main() {
 		userService,
 	)
 
-	// ============================================================
-	// GIN
-	// ============================================================
-
 	router := gin.New()
 
 	router.Use(
 		gin.Logger(),
 		gin.Recovery(),
 	)
-
-	// ============================================================
-	// SECURITY MIDDLEWARE
-	// ============================================================
 
 	router.Use(
 		middleware.RequestID(),
@@ -191,10 +145,6 @@ func main() {
 		),
 	)
 
-	// ============================================================
-	// TRUSTED PROXIES
-	// ============================================================
-
 	if err := router.SetTrustedProxies(nil); err != nil {
 		log.Fatalf(
 			"trusted proxy configuration error: %v",
@@ -202,102 +152,45 @@ func main() {
 		)
 	}
 
-	// ============================================================
-	// FRONTEND RENDERER
-	// ============================================================
-
-	/*
-		IMPORTANT:
-
-		The program is normally started from:
-
-		C:\go-tools\chatt-application\backend
-
-		Therefore:
-
-		../frontend/public
-
-		resolves to:
-
-		C:\go-tools\chatt-application\frontend\public
-	*/
-
-	frontendPublicDir := "../frontend/public"
-
-	frontendRenderer, err := frontend.NewRenderer(
-		frontendPublicDir,
-	)
-
-	if err != nil {
+	if err := routes.Routes(
+		router,
+		authHandler,
+		userHandler,
+		&routes.Config{
+			JWTAccessSecret: cfg.JWTAccessSecret,
+			JWTIssuer:       "forencis-api",
+			JWTAudience:     "forencis-client",
+			NextURL:         nextURL,
+		},
+	); err != nil {
 		log.Fatalf(
-			"frontend renderer initialization error: %v",
+			"route configuration error: %v",
 			err,
 		)
 	}
 
-	frontendRenderer.SetAppName(
-		"ChatApplication",
-	)
-
-	frontendRenderer.SetDescription(
-		"Secure real-time chat application",
-	)
-
-	// In debug mode templates are re-parsed on every request,
-	// so HTML edits show up on refresh without a restart.
-	frontendRenderer.SetDevMode(gin.Mode() != gin.ReleaseMode)
-
-	// Logs a warning for every page template that is missing.
-	frontendRenderer.CheckPages(
-		"home",
-		"register",
-		"login",
-		"verify-email",
-		"forgot-password",
-		"reset-password",
-		"404",
-	)
-
 	log.Printf(
-		"frontend directory: %s",
-		frontendRenderer.PublicDir(),
+		"Next.js frontend proxy enabled: %s",
+		nextURL,
 	)
-
-	log.Println(
-		"frontend renderer initialized successfully",
-	)
-
-	// ============================================================
-	// ROUTES
-	// ============================================================
-
-	routes.Routes(
-		router,
-		authHandler,
-		userHandler,
-		frontendRenderer,
-		&routes.Config{
-			JWTAccessSecret: cfg.JWTAccessSecret,
-			JWTIssuer:       "chat-api",
-			JWTAudience:     "chat-client",
-		},
-	)
-
-	// ============================================================
-	// SERVER
-	// ============================================================
 
 	address := ":" + cfg.AppPort
 
 	log.Printf(
-		"%s running on http://localhost%s",
-		cfg.AppName,
+		"%s backend running on http://localhost%s",
+		appName,
+		address,
+	)
+
+	log.Printf(
+		"API base URL: http://localhost%s/api/v1",
 		address,
 	)
 
 	if err := router.Run(address); err != nil {
 		log.Fatalf(
-			"server error: %v",
+			"%s server error: %v",
+			appName,
 			err,
 		)
 	}

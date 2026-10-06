@@ -61,6 +61,7 @@ type PageData struct {
 	Description string
 
 	Year int
+	   Page            string
 
 	User *UserView
 

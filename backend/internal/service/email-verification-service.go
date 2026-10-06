@@ -22,20 +22,20 @@ type EmailVerificationService struct {
 	tokenRepository *repository.EmailVerificationRepository
 	userRepository  *repository.UserRepository
 	emailService    *EmailService
-	appURL          string
+	EmailURL          string
 }
 
 func NewEmailVerificationService(
 	tokenRepository *repository.EmailVerificationRepository,
 	userRepository *repository.UserRepository,
 	emailService *EmailService,
-	appURL string,
+	EmailURL string,
 ) *EmailVerificationService {
 	return &EmailVerificationService{
 		tokenRepository: tokenRepository,
 		userRepository:  userRepository,
 		emailService:    emailService,
-		appURL:          strings.TrimRight(appURL, "/"),
+		EmailURL:          strings.TrimRight(EmailURL, "/"),
 	}
 }
 
@@ -234,7 +234,7 @@ func (s *EmailVerificationService) ResendVerificationEmail(
 	// Build verification URL
 	// --------------------------------------------------------
 
-	verificationURL := s.appURL +
+	verificationURL := s.EmailURL +
 		"/verify-email?token=" +
 		rawToken
 

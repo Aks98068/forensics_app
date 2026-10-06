@@ -155,6 +155,7 @@ func (r *UserRepository) MarkEmailAsVerified(
 
 	if result.Error != nil {
 		return result.Error
+		
 	}
 
 	if result.RowsAffected == 0 {

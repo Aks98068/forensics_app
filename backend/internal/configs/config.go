@@ -15,6 +15,7 @@ type Config struct {
 	AppPort     string
 	DatabaseURL string
 	AppURL      string
+	EmailURL    string 
 
 	SMTPHost     string
 	SMTPPort     string
@@ -44,7 +45,7 @@ func Load() (*Config, error) {
 
 	port := os.Getenv("APP_PORT")
 	if port == "" {
-		port = "8080"
+		port = "3000"
 	}
 
 	if _, err := strconv.Atoi(port); err != nil {
@@ -214,6 +215,12 @@ func Load() (*Config, error) {
 	if appURL == "" {
 		appURL = "http://localhost:3000"
 	}
+	
+	emailURL := os.Getenv("EMAIL_URL")
+
+	if emailURL == "" {
+		emailURL = "https://edutechpro.online"
+	}
 
 	jwtAccessSecret := os.Getenv("JWT_ACCESS_SECRET")
 
@@ -277,6 +284,7 @@ func Load() (*Config, error) {
 		RateLimitGlobalWindowSeconds: globalWindow,
 		RateLimitAuthRequests:        authRequests,
 		RateLimitAuthWindowSeconds:   authWindow,
+		EmailURL:         emailURL,
 	}, nil
 }
 
