@@ -37,17 +37,11 @@ func Routes(
 	// HEALTH CHECK
 	// ============================================================
 
-	router.GET(
-		"/health",
-		func(c *gin.Context) {
-			c.JSON(
-				http.StatusOK,
-				gin.H{
-					"status": "ok",
-				},
-			)
-		},
-	)
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+		})
+	})
 
 	// ============================================================
 	// API V1
@@ -63,10 +57,16 @@ func Routes(
 
 	auth.POST("/register", authHandler.Register)
 	auth.POST("/verify-email", authHandler.VerifyEmail)
-	auth.POST("/resend-verification", authHandler.ResendVerificationEmail)
+	auth.POST(
+		"/resend-verification",
+		authHandler.ResendVerificationEmail,
+	)
 
 	auth.POST("/login", authHandler.Login)
 	auth.POST("/refresh", authHandler.Refresh)
+
+	// IMPORTANT:
+	// Logout remains an API POST endpoint.
 	auth.POST("/logout", authHandler.Logout)
 
 	auth.POST("/forgot-password", authHandler.ForgotPassword)
@@ -102,10 +102,7 @@ func Routes(
 		),
 	)
 
-	userRoutes.GET(
-		"/me",
-		userHandler.Me,
-	)
+	userRoutes.GET("/me", userHandler.Me)
 
 	// ============================================================
 	// ANALYST
@@ -120,7 +117,8 @@ func Routes(
 		),
 	)
 
-	// Future:
+	// Future analyst endpoints:
+	//
 	// analystRoutes.GET("/cases", ...)
 	// analystRoutes.GET("/evidence", ...)
 	// analystRoutes.GET("/reports", ...)
@@ -139,7 +137,8 @@ func Routes(
 		),
 	)
 
-	// Future:
+	// Future admin endpoints:
+	//
 	// adminRoutes.GET("/users", ...)
 	// adminRoutes.GET("/cases", ...)
 	// adminRoutes.GET("/evidence", ...)
@@ -152,29 +151,28 @@ func Routes(
 	// ============================================================
 	// NEXT.JS FRONTEND
 	// ============================================================
-	//
-	// Anything that is not an API route goes to Next.js.
-	//
-	// Examples:
-	//
-	// /
-	// /register
-	// /login
-	// /about
-	// /_next/static/*
-	// /_next/image/*
-	// /favicon.ico
-	// /images/*
-	//
-	// IMPORTANT:
-	// This must stay AFTER the API routes.
-	// ============================================================
 
 	nextHandler, err := newNextProxy(cfg.NextURL)
 
 	if err != nil {
 		return err
 	}
+
+	// ============================================================
+	// IMPORTANT
+	// ============================================================
+	//
+	// We intentionally DO NOT create:
+	//
+	// router.GET("/logout", ...)
+	//
+	// because logout is handled by:
+	//
+	// POST /api/v1/auth/logout
+	//
+	// The dashboard frontend calls that endpoint directly.
+	//
+	// ============================================================
 
 	router.NoRoute(nextHandler)
 
@@ -190,9 +188,7 @@ func newNextProxy(rawURL string) (gin.HandlerFunc, error) {
 	rawURL = strings.TrimSpace(rawURL)
 
 	if rawURL == "" {
-		return nil, fmt.Errorf(
-			"next.js url is empty",
-		)
+		return nil, fmt.Errorf("next.js url is empty")
 	}
 
 	target, err := url.Parse(rawURL)
@@ -222,10 +218,6 @@ func newNextProxy(rawURL string) (gin.HandlerFunc, error) {
 	// ============================================================
 	// DIRECTOR
 	// ============================================================
-	//
-	// Preserve the original browser request information while
-	// forwarding the actual request to Next.js.
-	// ============================================================
 
 	originalDirector := proxy.Director
 
@@ -233,20 +225,12 @@ func newNextProxy(rawURL string) (gin.HandlerFunc, error) {
 
 		originalDirector(req)
 
-		// Preserve the public host.
-		//
-		// Browser:
-		// https://edutechpro.online
-		//
-		// Next.js internally:
-		// http://127.0.0.1:3001
-		//
-		// Next.js should know the original public host.
+		// Preserve public host.
 		if host := req.Header.Get("X-Forwarded-Host"); host != "" {
 			req.Host = host
 		}
 
-		// Forward the original protocol.
+		// Preserve original protocol.
 		if proto := req.Header.Get("X-Forwarded-Proto"); proto != "" {
 			req.Header.Set(
 				"X-Forwarded-Proto",
@@ -254,7 +238,7 @@ func newNextProxy(rawURL string) (gin.HandlerFunc, error) {
 			)
 		}
 
-		// Tell Next.js which server the request originally came from.
+		// Preserve original client IP.
 		if req.Header.Get("X-Forwarded-For") == "" {
 			req.Header.Set(
 				"X-Forwarded-For",
@@ -285,9 +269,7 @@ func newNextProxy(rawURL string) (gin.HandlerFunc, error) {
 			"application/json; charset=utf-8",
 		)
 
-		w.WriteHeader(
-			http.StatusBadGateway,
-		)
+		w.WriteHeader(http.StatusBadGateway)
 
 		_, _ = w.Write(
 			[]byte(`{"error":"frontend is not available"}`),
@@ -302,7 +284,10 @@ func newNextProxy(rawURL string) (gin.HandlerFunc, error) {
 
 		path := c.Request.URL.Path
 
-		// Unknown API routes must NOT be sent to Next.js.
+		// ========================================================
+		// NEVER PROXY UNKNOWN API ROUTES TO NEXT.JS
+		// ========================================================
+
 		if path == "/api" ||
 			strings.HasPrefix(path, "/api/") {
 
@@ -316,15 +301,9 @@ func newNextProxy(rawURL string) (gin.HandlerFunc, error) {
 			return
 		}
 
-		// These all go through the same proxy:
-		//
-		// /
-		// /register
-		// /login
-		// /_next/static/*
-		// /_next/image/*
-		// /favicon.ico
-		// etc.
+		// ========================================================
+		// FRONTEND REQUEST
+		// ========================================================
 
 		proxy.ServeHTTP(
 			c.Writer,
