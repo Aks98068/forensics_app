@@ -11,6 +11,7 @@ import (
 	"github.com/Aks98068/forensics/internal/handlres"
 	middleware "github.com/Aks98068/forensics/internal/middlewares"
 	"github.com/Aks98068/forensics/internal/models"
+	"github.com/Aks98068/forensics/internal/security"
 
 	"github.com/gin-gonic/gin"
 )
@@ -82,8 +83,8 @@ func Routes(
 		middleware.JWTAuthMiddleware(
 			middleware.JWTAuthConfig{
 				AccessSecret: cfg.JWTAccessSecret,
-				Issuer:       cfg.JWTIssuer,
-				Audience:     cfg.JWTAudience,
+				Issuer:       security.JWTIssuer,
+				Audience:     security.JWTAudience,
 			},
 		),
 	)
@@ -117,13 +118,7 @@ func Routes(
 		),
 	)
 
-	// Future analyst endpoints:
-	//
-	// analystRoutes.GET("/cases", ...)
-	// analystRoutes.GET("/evidence", ...)
-	// analystRoutes.GET("/reports", ...)
-
-	_ = analystRoutes
+	analystRoutes.GET("/me", userHandler.Me)
 
 	// ============================================================
 	// ADMIN
@@ -137,16 +132,7 @@ func Routes(
 		),
 	)
 
-	// Future admin endpoints:
-	//
-	// adminRoutes.GET("/users", ...)
-	// adminRoutes.GET("/cases", ...)
-	// adminRoutes.GET("/evidence", ...)
-	// adminRoutes.GET("/reports", ...)
-	// adminRoutes.GET("/audit-logs", ...)
-	// adminRoutes.GET("/settings", ...)
-
-	_ = adminRoutes
+	adminRoutes.GET("/me", userHandler.Me)
 
 	// ============================================================
 	// NEXT.JS FRONTEND

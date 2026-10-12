@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Aks98068/forensics/internal/models"
 	"github.com/Aks98068/forensics/internal/repository"
@@ -31,6 +32,8 @@ type AuthenticatedUser struct {
 	Role          models.UserRole   `json:"role"`
 	Status        models.UserStatus `json:"status"`
 	EmailVerified bool              `json:"emailVerified"`
+	LastLoginAt   *time.Time        `json:"last_login_at"`
+	CreatedAt     time.Time         `json:"created_at"`
 }
 
 func (s *UserService) GetAuthenticatedUser(

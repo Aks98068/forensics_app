@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,6 +7,7 @@ import Link from "next/link";
 import {
   Activity,
   Bell,
+  UserRound,
   BriefcaseBusiness,
   ClipboardList,
   Database,
@@ -33,109 +35,37 @@ type NavItem = {
   }>;
 };
 
+const API_BASE = "/api/v1";
+const ACCESS_TOKEN_KEY = "accessToken";
+
 const navigation: Record<Role, NavItem[]> = {
   user: [
-    {
-      label: "Dashboard",
-      href: "/dashboard/user",
-      icon: LayoutDashboard,
-    },
-    {
-      label: "My Cases",
-      href: "/dashboard/user/cases",
-      icon: BriefcaseBusiness,
-    },
-    {
-      label: "Evidence",
-      href: "/dashboard/user/evidence",
-      icon: Database,
-    },
-    {
-      label: "Search",
-      href: "/dashboard/user/search",
-      icon: Search,
-    },
-    {
-      label: "Activity",
-      href: "/dashboard/user/activity",
-      icon: Activity,
-    },
+    { label: "Dashboard", href: "/dashboard/user", icon: LayoutDashboard },
+    { label: "My Cases", href: "/dashboard/user/cases", icon: BriefcaseBusiness },
+    { label: "Evidence", href: "/dashboard/user/evidence", icon: Database },
+    { label: "Search", href: "/dashboard/user/search", icon: Search },
+    { label: "Activity", href: "/dashboard/user/activity", icon: Activity },
+    { label: "Profile", href: "/dashboard/user/profile", icon: UserRound },
   ],
 
   analyst: [
-    {
-      label: "Dashboard",
-      href: "/dashboard/analyst",
-      icon: LayoutDashboard,
-    },
-    {
-      label: "Investigations",
-      href: "/dashboard/analyst/investigations",
-      icon: FolderKanban,
-    },
-    {
-      label: "Evidence",
-      href: "/dashboard/analyst/evidence",
-      icon: Database,
-    },
-    {
-      label: "Forensic Search",
-      href: "/dashboard/analyst/search",
-      icon: FileSearch,
-    },
-    {
-      label: "Reports",
-      href: "/dashboard/analyst/reports",
-      icon: ClipboardList,
-    },
-    {
-      label: "Activity",
-      href: "/dashboard/analyst/activity",
-      icon: Activity,
-    },
+    { label: "Dashboard", href: "/dashboard/analyst", icon: LayoutDashboard },
+    { label: "Investigations", href: "/dashboard/analyst/investigations", icon: FolderKanban },
+    { label: "Evidence", href: "/dashboard/analyst/evidence", icon: Database },
+    { label: "Forensic Search", href: "/dashboard/analyst/search", icon: FileSearch },
+    { label: "Reports", href: "/dashboard/analyst/reports", icon: ClipboardList },
+    { label: "Activity", href: "/dashboard/analyst/activity", icon: Activity },
   ],
 
   admin: [
-    {
-      label: "Dashboard",
-      href: "/dashboard/admin",
-      icon: LayoutDashboard,
-    },
-    {
-      label: "Users",
-      href: "/dashboard/admin/users",
-      icon: Users,
-    },
-    {
-      label: "Cases",
-      href: "/dashboard/admin/cases",
-      icon: BriefcaseBusiness,
-    },
-    {
-      label: "Evidence",
-      href: "/dashboard/admin/evidence",
-      icon: Database,
-    },
-    {
-      label: "System Activity",
-      href: "/dashboard/admin/activity",
-      icon: Activity,
-    },
-    {
-      label: "Audit Logs",
-      href: "/dashboard/admin/audit",
-      icon: ClipboardList,
-    },
-    {
-      label: "Security",
-      href: "/dashboard/admin/security",
-      icon: ShieldCheck,
-    },
-    {
-      label: "Settings",
-      href: "/dashboard/admin/settings",
-      icon: Settings,
-    },
+    { label: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
+    { label: "Users", href: "/dashboard/admin/users", icon: Users },
+    { label: "Cases", href: "/dashboard/admin/cases", icon: BriefcaseBusiness },
+    { label: "Evidence", href: "/dashboard/admin/evidence", icon: Database },
+    { label: "System Activity", href: "/dashboard/admin/activity", icon: Activity },
+    { label: "Audit Logs", href: "/dashboard/admin/audit", icon: ClipboardList },
+    { label: "Security", href: "/dashboard/admin/security", icon: ShieldCheck },
+    { label: "Settings", href: "/dashboard/admin/settings", icon: Settings },
   ],
 };
 
@@ -155,30 +85,35 @@ export default function DashboardSidebar({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [accountName, setAccountName] = useState("User Account");
 
-  /*
-   * Fetch the logged-in user's name.
-   *
-   * The parser supports several common response shapes so the
-   * sidebar does not depend on one exact API wrapper structure.
-   */
+  // Load the authenticated user's profile.
   useEffect(() => {
     let mounted = true;
 
     async function loadAccount() {
       try {
-        const response = await fetch(
-          "/api/v1/protected/user/me",
-          {
-            method: "GET",
-            credentials: "include",
-            headers: {
-              Accept: "application/json",
-            },
-            cache: "no-store",
+        const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+
+        if (!accessToken) {
+          console.warn(
+            "FORENSIQ: No access token found. Check your login token-storage key."
+          );
+          return;
+        }
+
+        const response = await fetch(`${API_BASE}/protected/user/me`, {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${accessToken}`,
           },
-        );
+          cache: "no-store",
+        });
 
         if (!response.ok) {
+          console.error(
+            `FORENSIQ: Profile request failed with status ${response.status}.`
+          );
           return;
         }
 
@@ -190,38 +125,39 @@ export default function DashboardSidebar({
           data?.data ??
           data;
 
+        const firstName = user?.first_name ?? user?.firstName ?? "";
+        const lastName = user?.last_name ?? user?.lastName ?? "";
+        const fullName = `${firstName} ${lastName}`.trim();
+
         const name =
-          user?.name ??
-          user?.full_name ??
-          user?.fullName ??
-          user?.username ??
+          fullName ||
+          user?.name ||
+          user?.full_name ||
+          user?.fullName ||
+          user?.username ||
           user?.email;
 
         if (mounted && name) {
           setAccountName(String(name));
         }
-      } catch {
-        // Keep the fallback account name.
+      } catch (error) {
+        console.error("FORENSIQ: Could not load profile.", error);
       }
     }
 
-    loadAccount();
+    void loadAccount();
 
     return () => {
       mounted = false;
     };
   }, []);
 
-  /*
-   * Close the mobile drawer whenever the route changes.
-   */
+  // Close the mobile sidebar after navigation.
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
-  /*
-   * Prevent body scrolling while the mobile drawer is open.
-   */
+  // Prevent background scrolling when the mobile sidebar is open.
   useEffect(() => {
     if (!mobileOpen) {
       document.body.style.overflow = "";
@@ -235,13 +171,9 @@ export default function DashboardSidebar({
     };
   }, [mobileOpen]);
 
-  /*
-   * Allow ESC to close the mobile sidebar.
-   */
+  // Close the mobile sidebar with Escape.
   useEffect(() => {
-    if (!mobileOpen) {
-      return;
-    }
+    if (!mobileOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -256,17 +188,26 @@ export default function DashboardSidebar({
     };
   }, [mobileOpen]);
 
+  // Logout through the existing API endpoint.
   const handleLogout = async () => {
     try {
-      await fetch("/api/v1/auth/logout", {
+      const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+
+      await fetch(`${API_BASE}/auth/logout`, {
         method: "POST",
         credentials: "include",
         headers: {
           Accept: "application/json",
+          ...(accessToken
+            ? { Authorization: `Bearer ${accessToken}` }
+            : {}),
         },
         cache: "no-store",
       });
+    } catch (error) {
+      console.error("FORENSIQ: Logout request failed.", error);
     } finally {
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
       window.location.replace("/login");
     }
   };
@@ -276,45 +217,20 @@ export default function DashboardSidebar({
       return pathname === href;
     }
 
-    return (
-      pathname === href ||
-      pathname.startsWith(`${href}/`)
-    );
+    return pathname === href || pathname.startsWith(`${href}/`);
   };
 
   return (
     <>
-      {/* =========================================================
-          MOBILE TOPBAR
-      ========================================================= */}
-      <header
-        className="
-          fixed inset-x-0 top-0 z-[60]
-          flex h-[68px] items-center justify-between
-          border-b border-[#2A2E34]
-          bg-[#171A1F]
-          px-4
-          lg:hidden
-        "
-      >
+      {/* MOBILE TOPBAR */}
+      <header className="fixed inset-x-0 top-0 z-[60] flex h-[68px] items-center justify-between border-b border-[#2A2E34] bg-[#171A1F] px-4 lg:hidden">
         <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
             aria-label="Open dashboard menu"
             aria-expanded={mobileOpen}
-            className="
-              flex h-10 w-10 shrink-0 items-center justify-center
-              border border-[#353A41]
-              bg-[#20252B]
-              text-white
-              transition
-              hover:border-[#F97316]
-              hover:text-[#F97316]
-              focus:outline-none
-              focus:ring-2
-              focus:ring-[#F97316]/40
-            "
+            className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#353A41] bg-[#20252B] text-white transition hover:border-[#F97316] hover:text-[#F97316] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40"
           >
             <Menu size={21} strokeWidth={2} />
           </button>
@@ -323,23 +239,12 @@ export default function DashboardSidebar({
             href={`/dashboard/${role}`}
             className="flex min-w-0 items-center gap-2"
           >
-            {/* UPDATED LOGO */}
-            <span
-              className="
-                flex h-8 w-8 shrink-0 items-center justify-center
-                rounded-lg
-                bg-[#F97316]
-              "
-            >
-              <Fingerprint
-                size={18}
-                strokeWidth={2.1}
-                className="text-white"
-              />
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F97316]">
+              <Fingerprint size={18} strokeWidth={2.1} className="text-white" />
             </span>
 
             <span className="truncate text-sm font-bold tracking-[0.18em] text-white">
-              FORENCIS
+              FORENSIQ
             </span>
           </Link>
         </div>
@@ -348,131 +253,65 @@ export default function DashboardSidebar({
           <Link
             href="/notifications"
             aria-label="Notifications"
-            className="
-              flex h-10 w-10 items-center justify-center
-              border border-[#353A41]
-              bg-[#20252B]
-              text-[#D9DDE2]
-              transition
-              hover:border-[#F97316]
-              hover:text-[#F97316]
-            "
+            className="flex h-10 w-10 items-center justify-center border border-[#353A41] bg-[#20252B] text-[#D9DDE2] transition hover:border-[#F97316] hover:text-[#F97316]"
           >
             <Bell size={19} strokeWidth={1.9} />
           </Link>
 
-          <div
-            className="
-              hidden
-              max-w-[140px]
-              truncate
-              border border-[#353A41]
-              bg-[#20252B]
-              px-3 py-2
-              text-xs font-medium text-[#E5E7EB]
-              sm:block
-            "
-          >
+          <div className="hidden max-w-[140px] truncate border border-[#353A41] bg-[#20252B] px-3 py-2 text-xs font-medium text-[#E5E7EB] sm:block">
             {accountName}
           </div>
         </div>
       </header>
 
-      {/* =========================================================
-          MOBILE OVERLAY
-      ========================================================= */}
+      {/* MOBILE OVERLAY */}
       {mobileOpen && (
         <button
           type="button"
           aria-label="Close dashboard menu"
           onClick={() => setMobileOpen(false)}
-          className="
-            fixed inset-0 z-[70]
-            bg-black/60
-            backdrop-blur-[2px]
-            lg:hidden
-          "
+          className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-[2px] lg:hidden"
         />
       )}
 
-      {/* =========================================================
-          SIDEBAR
-      ========================================================= */}
+      {/* SIDEBAR */}
       <aside
-        className={`
-          fixed left-0 top-0 z-[80]
-          flex h-dvh w-[280px] flex-col
-          border-r border-[#2A2E34]
-          bg-[#171A1F]
-          shadow-2xl
-          transition-transform duration-300 ease-out
-          lg:w-72
-          lg:translate-x-0
-          lg:shadow-none
-          ${
-            mobileOpen
-              ? "translate-x-0"
-              : "-translate-x-full"
-          }
-        `}
+        className={`fixed left-0 top-0 z-[80] flex h-dvh w-[280px] flex-col border-r border-[#2A2E34] bg-[#171A1F] shadow-2xl transition-transform duration-300 ease-out lg:w-72 lg:translate-x-0 lg:shadow-none ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
-        {/* ---------------------------------------------------------
-            SIDEBAR HEADER
-        --------------------------------------------------------- */}
+        {/* SIDEBAR HEADER */}
         <div className="flex h-[76px] shrink-0 items-center justify-between border-b border-[#2A2E34] px-5">
           <Link
             href={`/dashboard/${role}`}
             onClick={() => setMobileOpen(false)}
             className="flex min-w-0 items-center gap-3"
           >
-            {/* UPDATED LOGO */}
-            <span
-              className="
-                flex h-10 w-10 shrink-0 items-center justify-center
-                rounded-xl
-                bg-[#F97316]
-              "
-            >
-              <Fingerprint
-                size={21}
-                strokeWidth={2}
-                className="text-white"
-              />
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F97316]">
+              <Fingerprint size={21} strokeWidth={2} className="text-white" />
             </span>
 
             <div className="min-w-0">
               <div className="truncate text-sm font-black tracking-[0.2em] text-white">
-                FORENCIS
+                FORENSIQ
               </div>
-
               <div className="mt-0.5 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-[#8E959D]">
                 Digital Evidence
               </div>
             </div>
           </Link>
 
-          {/* Mobile close button */}
           <button
             type="button"
             onClick={() => setMobileOpen(false)}
             aria-label="Close dashboard menu"
-            className="
-              flex h-9 w-9 shrink-0 items-center justify-center
-              border border-[#353A41]
-              text-[#AEB4BB]
-              transition
-              hover:border-[#F97316]
-              hover:text-[#F97316]
-              lg:hidden
-            "
+            className="flex h-9 w-9 shrink-0 items-center justify-center border border-[#353A41] text-[#AEB4BB] transition hover:border-[#F97316] hover:text-[#F97316] lg:hidden"
           >
             <X size={19} />
           </button>
         </div>
 
-        {/* ---------------------------------------------------------
-            NAVIGATION
-        --------------------------------------------------------- */}
+        {/* NAVIGATION */}
         <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
           <div className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#737A82]">
             Workspace
@@ -488,26 +327,14 @@ export default function DashboardSidebar({
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
-                  className={`
-                    group
-                    relative flex min-h-[46px] items-center gap-3
-                    border px-3
-                    text-sm font-medium
-                    transition-all duration-150
-                    ${
-                      active
-                        ? "border-[#F97316]/40 bg-[#F97316]/10 text-white"
-                        : "border-transparent text-[#AEB4BB] hover:border-[#353A41] hover:bg-[#20252B] hover:text-white"
-                    }
-                  `}
+                  className={`group relative flex min-h-[46px] items-center gap-3 border px-3 text-sm font-medium transition-all duration-150 ${
+                    active
+                      ? "border-[#F97316]/40 bg-[#F97316]/10 text-white"
+                      : "border-transparent text-[#AEB4BB] hover:border-[#353A41] hover:bg-[#20252B] hover:text-white"
+                  }`}
                 >
                   {active && (
-                    <span
-                      className="
-                        absolute left-0 top-0 h-full w-[3px]
-                        bg-[#F97316]
-                      "
-                    />
+                    <span className="absolute left-0 top-0 h-full w-[3px] bg-[#F97316]" />
                   )}
 
                   <span
@@ -517,58 +344,29 @@ export default function DashboardSidebar({
                         : "text-[#858C94] group-hover:text-[#F97316]"
                     }
                   >
-                    <Icon
-                      size={19}
-                      strokeWidth={active ? 2.2 : 1.8}
-                    />
+                    <Icon size={19} strokeWidth={active ? 2.2 : 1.8} />
                   </span>
 
-                  <span className="truncate">
-                    {item.label}
-                  </span>
+                  <span className="truncate">{item.label}</span>
                 </Link>
               );
             })}
           </div>
         </nav>
 
-        {/* ---------------------------------------------------------
-            ACCOUNT + LOGOUT
-        --------------------------------------------------------- */}
+        {/* ACCOUNT + LOGOUT */}
         <div className="shrink-0 border-t border-[#2A2E34] p-3">
           <Link
             href="/notifications"
             onClick={() => setMobileOpen(false)}
-            className="
-              mb-1 flex min-h-[44px] items-center gap-3
-              border border-transparent
-              px-3
-              text-sm font-medium text-[#AEB4BB]
-              transition
-              hover:border-[#353A41]
-              hover:bg-[#20252B]
-              hover:text-white
-            "
+            className="mb-1 flex min-h-[44px] items-center gap-3 border border-transparent px-3 text-sm font-medium text-[#AEB4BB] transition hover:border-[#353A41] hover:bg-[#20252B] hover:text-white"
           >
             <Bell size={18} strokeWidth={1.8} />
             <span>Notifications</span>
           </Link>
 
-          <div
-            className="
-              mb-1 flex min-h-[52px] items-center gap-3
-              border border-[#2A2E34]
-              bg-[#1D2228]
-              px-3
-            "
-          >
-            <div
-              className="
-                flex h-9 w-9 shrink-0 items-center justify-center
-                bg-[#F97316]
-                text-sm font-bold text-white
-              "
-            >
+          <div className="mb-1 flex min-h-[52px] items-center gap-3 border border-[#2A2E34] bg-[#1D2228] px-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-[#F97316] text-sm font-bold text-white">
               {accountName.charAt(0).toUpperCase()}
             </div>
 
@@ -576,7 +374,6 @@ export default function DashboardSidebar({
               <p className="truncate text-sm font-semibold text-white">
                 {accountName}
               </p>
-
               <p className="truncate text-[10px] uppercase tracking-[0.12em] text-[#737A82]">
                 {roleLabels[role]}
               </p>
@@ -586,16 +383,7 @@ export default function DashboardSidebar({
           <button
             type="button"
             onClick={handleLogout}
-            className="
-              flex min-h-[44px] w-full items-center gap-3
-              border border-transparent
-              px-3
-              text-sm font-medium text-[#AEB4BB]
-              transition
-              hover:border-red-500/30
-              hover:bg-red-500/10
-              hover:text-red-400
-            "
+            className="flex min-h-[44px] w-full items-center gap-3 border border-transparent px-3 text-sm font-medium text-[#AEB4BB] transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
           >
             <LogOut size={18} strokeWidth={1.8} />
             <span>Sign out</span>
@@ -603,27 +391,12 @@ export default function DashboardSidebar({
         </div>
       </aside>
 
-      {/* =========================================================
-          DESKTOP TOPBAR
-      ========================================================= */}
-      <header
-        className="
-          fixed right-0 top-0 z-40
-          hidden h-[76px]
-          border-b border-[#E2DED5]
-          bg-[#F7F4EE]/95
-          backdrop-blur-md
-          lg:left-72
-          lg:flex
-          items-center justify-between
-          px-8
-        "
-      >
+      {/* DESKTOP TOPBAR */}
+      <header className="fixed right-0 top-0 z-40 hidden h-[76px] items-center justify-between border-b border-[#E2DED5] bg-[#F7F4EE]/95 px-8 backdrop-blur-md lg:left-72 lg:flex">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#737A82]">
-            FORENCIS Workspace
+            FORENSIQ Workspace
           </p>
-
           <p className="mt-1 text-sm font-semibold text-[#171A1F]">
             {roleLabels[role]}
           </p>
@@ -633,34 +406,13 @@ export default function DashboardSidebar({
           <Link
             href="/notifications"
             aria-label="Notifications"
-            className="
-              flex h-10 w-10 items-center justify-center
-              border border-[#D8D3C9]
-              bg-white
-              text-[#555C64]
-              transition
-              hover:border-[#F97316]
-              hover:text-[#F97316]
-            "
+            className="flex h-10 w-10 items-center justify-center border border-[#D8D3C9] bg-white text-[#555C64] transition hover:border-[#F97316] hover:text-[#F97316]"
           >
             <Bell size={19} strokeWidth={1.8} />
           </Link>
 
-          <div
-            className="
-              flex h-10 items-center gap-3
-              border border-[#D8D3C9]
-              bg-white
-              px-3
-            "
-          >
-            <div
-              className="
-                flex h-7 w-7 items-center justify-center
-                bg-[#171A1F]
-                text-xs font-bold text-white
-              "
-            >
+          <div className="flex h-10 items-center gap-3 border border-[#D8D3C9] bg-white px-3">
+            <div className="flex h-7 w-7 items-center justify-center bg-[#171A1F] text-xs font-bold text-white">
               {accountName.charAt(0).toUpperCase()}
             </div>
 

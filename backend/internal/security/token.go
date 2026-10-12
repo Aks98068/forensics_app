@@ -12,6 +12,11 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	JWTIssuer   = "forensics-api"
+	JWTAudience = "forensics-client"
+)
+
 // ------------------------------------------------------------
 // Secure Random Token
 // ------------------------------------------------------------
@@ -114,14 +119,13 @@ func (s *TokenService) GenerateAccessToken(
 
 			Subject: user.ID.String(),
 
-			Issuer: "forensics-api",
+			Issuer: JWTIssuer,
 
-			Audience: []string{
-				"forensics-client",
+			Audience: jwt.ClaimStrings{
+				JWTAudience,
 			},
 
-			IssuedAt: jwt.NewNumericDate(now),
-
+			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
 		},
 	}
