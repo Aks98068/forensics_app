@@ -1,7 +1,11 @@
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://edutechpro.online";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "https://edutechpro.online")
+  .trim()
+  .replace(/\/+$/, "");
 
 const ACCESS_TOKEN_KEY = "accessToken";
+const REFRESH_TOKEN_KEY = "refreshToken";
+const AUTH_USER_KEY = "authUser";
 
 export type AuthenticatedUser = {
   id: string;
@@ -9,132 +13,380 @@ export type AuthenticatedUser = {
   email: string;
   first_name?: string;
   last_name?: string;
-  role: "USER" | "ANALYST" | "ADMIN" | string;
+  role: "USER" | "INVESTIGATOR" | "ANALYST" | "ADMIN" | string;
   status?: string;
   email_verified?: boolean;
   created_at?: string;
   last_login_at?: string | null;
+  [key: string]: unknown;
 };
 
-export type ApiError = Error & {
-  status?: number;
-};
-
-type ApiRequestOptions = Omit<RequestInit, "headers"> & {
-  headers?: HeadersInit;
-};
-
-type LoginResponse = {
+type TokenResponse = {
   accessToken?: string;
   refreshToken?: string;
+  accessTokenExpiresAt?: string;
+  refreshTokenExpiresAt?: string;
   user?: AuthenticatedUser;
   message?: string;
   error?: string;
 };
 
-type ProfileResponse = {
-  user: AuthenticatedUser;
+export type ApiRequestOptions = Omit<RequestInit, "headers"> & {
+  headers?: HeadersInit;
 };
 
-function createApiError(
-  message: string,
-  status?: number
-): ApiError {
-  const error = new Error(message) as ApiError;
+export class ApiError extends Error {
+  status: number;
+  data: unknown;
 
-  error.status = status;
-
-  return error;
+  constructor(message: string, status = 0, data?: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.data = data;
+  }
 }
 
-/**
- * Retrieve the access token stored after a successful login.
- * Call this only in the browser.
- */
+let refreshPromise: Promise<string | null> | null = null;
+
+function isBrowser(): boolean {
+  return typeof window !== "undefined";
+}
+
+export function getApiUrl(path: string): string {
+  if (
+    !path.startsWith("/api/v1/") ||
+    path.startsWith("//") ||
+    path.includes("\\")
+  ) {
+    throw new Error(`Invalid FORENSIQ API path: ${path}`);
+  }
+
+  return `${API_BASE}${path}`;
+}
+
 export function getAccessToken(): string | null {
-  if (typeof window === "undefined") {
+  if (!isBrowser()) return null;
+
+  try {
+    return window.localStorage.getItem(ACCESS_TOKEN_KEY);
+  } catch {
     return null;
   }
-
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
-/**
- * Store the access token after a successful login.
- */
-export function setAccessToken(token: string): void {
-  if (typeof window === "undefined") {
-    throw new Error("Access tokens can only be stored in the browser.");
-  }
+export function getRefreshToken(): string | null {
+  if (!isBrowser()) return null;
 
-  if (!token.trim()) {
-    throw new Error("Cannot store an empty access token.");
-  }
-
-  localStorage.setItem(ACCESS_TOKEN_KEY, token);
-}
-
-/**
- * Remove the locally stored access token.
- */
-export function clearAccessToken(): void {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
+  try {
+    return window.localStorage.getItem(REFRESH_TOKEN_KEY);
+  } catch {
+    return null;
   }
 }
 
+export function getStoredUser(): AuthenticatedUser | null {
+  if (!isBrowser()) return null;
+
+  try {
+    const raw = window.localStorage.getItem(AUTH_USER_KEY);
+    if (!raw) return null;
+
+    return JSON.parse(raw) as AuthenticatedUser;
+  } catch {
+    return null;
+  }
+}
+
+export function setAuthTokens(
+  accessToken: string,
+  refreshToken: string,
+): void {
+  if (!isBrowser()) return;
+
+  window.localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  window.localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+}
+
+export function setStoredUser(user: AuthenticatedUser): void {
+  if (!isBrowser()) return;
+
+  window.localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+}
+
+export function clearAuthSession(): void {
+  if (!isBrowser()) return;
+
+  try {
+    window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+    window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+    window.localStorage.removeItem(AUTH_USER_KEY);
+  } catch (error) {
+    console.error("FORENSIQ: Could not clear the stored session.", error);
+  }
+}
+
+function redirectToLogin(): void {
+  if (!isBrowser()) return;
+
+  const currentPath = window.location.pathname;
+
+  if (
+    currentPath !== "/login" &&
+    !currentPath.startsWith("/login/")
+  ) {
+    window.location.replace("/login");
+  }
+}
+
+async function readResponseBody(
+  response: Response,
+): Promise<unknown> {
+  const text = await response.text();
+
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
+}
+
+function getErrorMessage(
+  data: unknown,
+  fallback: string,
+): string {
+  if (typeof data === "string" && data.trim()) {
+    return data;
+  }
+
+  if (data && typeof data === "object") {
+    const record = data as Record<string, unknown>;
+
+    if (typeof record.message === "string" && record.message.trim()) {
+      return record.message;
+    }
+
+    if (typeof record.error === "string" && record.error.trim()) {
+      return record.error;
+    }
+  }
+
+  return fallback;
+}
+
+function makeApiError(
+  response: Response,
+  data: unknown,
+): ApiError {
+  return new ApiError(
+    getErrorMessage(
+      data,
+      `API request failed with HTTP ${response.status}.`,
+    ),
+    response.status,
+    data,
+  );
+}
+
 /**
- * Make an authenticated request to the Go backend.
- *
- * The backend must validate the Bearer token.
- * This function does not bypass server-side authorization.
+ * Public requests do not automatically attach authentication tokens.
  */
-export async function authFetch(
+export async function publicFetch(
   path: string,
-  options: ApiRequestOptions = {}
+  options: ApiRequestOptions = {},
 ): Promise<Response> {
-  if (!path.startsWith("/") || path.startsWith("//")) {
-    throw new Error("API path must be a local absolute path.");
-  }
-
-  const token = getAccessToken();
-
-  if (!token) {
-    throw createApiError(
-      "Your session is missing. Please log in again.",
-      401
-    );
-  }
-
   const headers = new Headers(options.headers);
 
-  headers.set("Accept", "application/json");
-  headers.set("Authorization", `Bearer ${token}`);
+  if (!headers.has("Accept")) {
+    headers.set("Accept", "application/json");
+  }
 
-  const response = await fetch(`${API_BASE}${path}`, {
+  return fetch(getApiUrl(path), {
     ...options,
     headers,
     credentials: "include",
     cache: "no-store",
   });
+}
 
-  if (response.status === 401) {
-    clearAccessToken();
+/**
+ * Refreshes the access token and rotates the refresh token.
+ * Concurrent requests share one refresh operation.
+ */
+export async function refreshAccessToken(): Promise<string | null> {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
 
-    if (typeof window !== "undefined") {
-      const currentPath =
-        window.location.pathname + window.location.search;
+  refreshPromise = (async (): Promise<string | null> => {
+    const refreshToken = getRefreshToken();
 
-      if (window.location.pathname !== "/login") {
-        const returnTo = encodeURIComponent(currentPath);
-
-        window.location.replace(`/login?returnTo=${returnTo}`);
-      }
+    if (!refreshToken) {
+      return null;
     }
 
-    throw createApiError(
-      "Your session is invalid or expired. Please log in again.",
-      401
+    try {
+      const response = await fetch(
+        getApiUrl("/api/v1/auth/refresh"),
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          cache: "no-store",
+          body: JSON.stringify({ refreshToken }),
+        },
+      );
+
+      const data = (await readResponseBody(
+        response,
+      )) as TokenResponse | null;
+
+      if (!response.ok) {
+        console.error(
+          `FORENSIQ: Refresh failed with HTTP ${response.status}.`,
+          getErrorMessage(data, ""),
+        );
+
+        // A 401 means the refresh token was not accepted.
+        // A 400 may also mean it is invalid, depending on the backend.
+        if (response.status === 401 || response.status === 400) {
+          clearAuthSession();
+        }
+
+        return null;
+      }
+
+      if (
+        !data ||
+        typeof data.accessToken !== "string" ||
+        !data.accessToken.trim() ||
+        typeof data.refreshToken !== "string" ||
+        !data.refreshToken.trim()
+      ) {
+        console.error(
+          "FORENSIQ: Refresh endpoint did not return both accessToken and refreshToken.",
+        );
+        clearAuthSession();
+        return null;
+      }
+
+      // Save BOTH tokens because the backend rotates the refresh token.
+      setAuthTokens(data.accessToken, data.refreshToken);
+
+      return data.accessToken;
+    } catch (error) {
+      // A temporary network/CORS failure is not proof that the
+      // refresh token is invalid, so do not clear the session here.
+      console.error(
+        "FORENSIQ: Could not reach the refresh endpoint.",
+        error,
+      );
+
+      return null;
+    }
+  })();
+
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+}
+
+async function sendAuthenticatedRequest(
+  path: string,
+  options: ApiRequestOptions,
+  token: string,
+): Promise<Response> {
+  const headers = new Headers(options.headers);
+
+  headers.set("Accept", "application/json");
+  headers.set("Authorization", `Bearer ${token}`);
+
+  return fetch(getApiUrl(path), {
+    ...options,
+    headers,
+    credentials: "include",
+    cache: "no-store",
+  });
+}
+
+/**
+ * Sends an authenticated request.
+ * If the access token is missing or the API returns 401,
+ * it refreshes the token and retries the request once.
+ */
+export async function authFetch(
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<Response> {
+  let token = getAccessToken();
+
+  if (!token) {
+    token = await refreshAccessToken();
+  }
+
+  if (!token) {
+    redirectToLogin();
+
+    throw new ApiError(
+      "Your session could not be renewed. Please log in again.",
+      401,
+    );
+  }
+
+  const originalToken = token;
+
+  let response = await sendAuthenticatedRequest(
+    path,
+    options,
+    originalToken,
+  );
+
+  if (response.status !== 401) {
+    return response;
+  }
+
+  // Another request may already have refreshed the token.
+  const storedToken = getAccessToken();
+
+  let newToken: string | null;
+
+  if (storedToken && storedToken !== originalToken) {
+    newToken = storedToken;
+  } else {
+    newToken = await refreshAccessToken();
+  }
+
+  if (!newToken) {
+    clearAuthSession();
+    redirectToLogin();
+
+    throw new ApiError(
+      "Your session has expired. Please log in again.",
+      401,
+    );
+  }
+
+  // Retry only once to prevent an infinite refresh loop.
+  response = await sendAuthenticatedRequest(
+    path,
+    options,
+    newToken,
+  );
+
+  if (response.status === 401) {
+    clearAuthSession();
+    redirectToLogin();
+
+    throw new ApiError(
+      "Authentication failed after token renewal. Please log in again.",
+      401,
     );
   }
 
@@ -142,128 +394,153 @@ export async function authFetch(
 }
 
 /**
- * Parse a JSON API response and report HTTP errors.
+ * Authenticated JSON helper.
+ * Returns the parsed JSON response or throws ApiError.
  */
 export async function authJson<T>(
   path: string,
-  options: ApiRequestOptions = {}
+  options: ApiRequestOptions = {},
 ): Promise<T> {
   const response = await authFetch(path, options);
+  const data = await readResponseBody(response);
 
   if (!response.ok) {
-    let message = `Request failed with HTTP ${response.status}.`;
-
-    try {
-      const data = await response.clone().json();
-
-      if (typeof data?.error === "string") {
-        message = data.error;
-      } else if (typeof data?.message === "string") {
-        message = data.message;
-      }
-    } catch {
-      // Keep the HTTP status message if the response is not JSON.
-    }
-
-    throw createApiError(message, response.status);
+    throw makeApiError(response, data);
   }
 
-  return (await response.json()) as T;
+  return data as T;
 }
 
 /**
- * Retrieve the currently authenticated user's profile.
- *
- * Backend endpoint:
- * GET /api/v1/protected/user/me
+ * Loads the currently authenticated user.
  */
 export async function getCurrentUser(): Promise<AuthenticatedUser> {
-  const data = await authJson<ProfileResponse>(
+  const data = await authJson<unknown>(
     "/api/v1/protected/user/me",
-    {
-      method: "GET",
-    }
+    { method: "GET" },
   );
 
-  if (!data?.user) {
-    throw new Error("The server did not return a user profile.");
+  if (!data || typeof data !== "object") {
+    throw new ApiError(
+      "The current-user endpoint returned an invalid response.",
+      500,
+      data,
+    );
   }
 
-  return data.user;
+  const record = data as Record<string, unknown>;
+
+  // Support either a direct user object or { user: {...} }.
+  const candidate =
+    record.user &&
+    typeof record.user === "object"
+      ? (record.user as Record<string, unknown>)
+      : record;
+
+  if (
+    typeof candidate.id !== "string" ||
+    typeof candidate.username !== "string" ||
+    typeof candidate.email !== "string"
+  ) {
+    throw new ApiError(
+      "The current-user response is missing required user fields.",
+      500,
+      data,
+    );
+  }
+
+  const user = candidate as unknown as AuthenticatedUser;
+
+  setStoredUser(user);
+
+  return user;
 }
 
 /**
- * Log in using an email address or username.
+ * Logs in and saves the access token, refresh token, and user.
  */
 export async function login(
   identifier: string,
-  password: string
-): Promise<LoginResponse> {
-  const response = await fetch(`${API_BASE}/api/v1/auth/login`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
+  password: string,
+): Promise<TokenResponse & { user: AuthenticatedUser }> {
+  const response = await publicFetch(
+    "/api/v1/auth/login",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        identifier,
+        username: identifier,
+        email: identifier,
+        password,
+      }),
     },
-    credentials: "include",
-    cache: "no-store",
-    body: JSON.stringify({
-      identifier: identifier.trim(),
-      password,
-    }),
-  });
+  );
 
-  let data: LoginResponse;
-
-  try {
-    data = (await response.json()) as LoginResponse;
-  } catch {
-    throw createApiError(
-      "The server returned an invalid login response.",
-      response.status
-    );
-  }
+  const data = (await readResponseBody(
+    response,
+  )) as TokenResponse | null;
 
   if (!response.ok) {
-    throw createApiError(
-      data.error || data.message || "Login failed.",
-      response.status
+    throw makeApiError(response, data);
+  }
+
+  if (
+    !data ||
+    typeof data.accessToken !== "string" ||
+    typeof data.refreshToken !== "string" ||
+    !data.user
+  ) {
+    throw new ApiError(
+      "The login response is missing accessToken, refreshToken, or user.",
+      500,
+      data,
     );
   }
 
-  if (!data.accessToken) {
-    throw new Error(
-      "Login succeeded without returning an access token."
-    );
-  }
+  setAuthTokens(data.accessToken, data.refreshToken);
+  setStoredUser(data.user);
 
-  setAccessToken(data.accessToken);
-
-  return data;
+  return data as TokenResponse & { user: AuthenticatedUser };
 }
 
 /**
- * Log out through the Go backend, then clear the local token.
+ * Logs out on the server, then clears the local session.
  */
 export async function logout(): Promise<void> {
-  try {
-    const token = getAccessToken();
+  const refreshToken = getRefreshToken();
+  const accessToken = getAccessToken();
 
-    if (token) {
-      await fetch(`${API_BASE}/api/v1/auth/logout`, {
+  try {
+    if (refreshToken) {
+      const headers = new Headers({
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      });
+
+      if (accessToken) {
+        headers.set("Authorization", `Bearer ${accessToken}`);
+      }
+
+      await fetch(getApiUrl("/api/v1/auth/logout"), {
         method: "POST",
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
         credentials: "include",
         cache: "no-store",
+        body: JSON.stringify({ refreshToken }),
       });
     }
+  } catch (error) {
+    console.error(
+      "FORENSIQ: Server logout request failed.",
+      error,
+    );
   } finally {
-    clearAccessToken();
+    clearAuthSession();
 
-    if (typeof window !== "undefined") {
+    if (isBrowser()) {
       window.location.replace("/login");
     }
   }

@@ -20,11 +20,7 @@ type Config struct {
 	JWTAccessSecret string
 	JWTIssuer       string
 	JWTAudience     string
-
-	// Internal Next.js server.
-	// Example:
-	// http://127.0.0.1:3001
-	NextURL string
+	NextURL         string
 }
 
 func Routes(
@@ -33,52 +29,65 @@ func Routes(
 	userHandler *handlres.UserHandler,
 	cfg *Config,
 ) error {
+	if router == nil {
+		return fmt.Errorf("router must not be nil")
+	}
 
-	// ============================================================
-	// HEALTH CHECK
-	// ============================================================
+	if authHandler == nil {
+		return fmt.Errorf("auth handler must not be nil")
+	}
 
+	if userHandler == nil {
+		return fmt.Errorf("user handler must not be nil")
+	}
+
+	if cfg == nil {
+		return fmt.Errorf("routes config must not be nil")
+	}
+
+	if strings.TrimSpace(cfg.JWTAccessSecret) == "" {
+		return fmt.Errorf("JWT access secret must not be empty")
+	}
+
+	// Health check.
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
 		})
 	})
 
-	// ============================================================
-	// API V1
-	// ============================================================
-
+	// API v1.
 	api := router.Group("/api/v1")
 
-	// ============================================================
-	// AUTH
-	// ============================================================
-
+	// Authentication routes.
 	auth := api.Group("/auth")
+	{
+		auth.POST("/register", authHandler.Register)
+		auth.POST("/verify-email", authHandler.VerifyEmail)
+		auth.POST(
+			"/resend-verification",
+			authHandler.ResendVerificationEmail,
+		)
+		auth.POST("/login", authHandler.Login)
+		auth.POST("/refresh", authHandler.Refresh)
+		auth.POST("/logout", authHandler.Logout)
+		auth.POST("/forgot-password", authHandler.ForgotPassword)
+		auth.POST("/reset-password", authHandler.ResetPassword)
+	}
 
-	auth.POST("/register", authHandler.Register)
-	auth.POST("/verify-email", authHandler.VerifyEmail)
-	auth.POST(
-		"/resend-verification",
-		authHandler.ResendVerificationEmail,
-	)
+	// Resolve JWT validation settings.
+	issuer := strings.TrimSpace(cfg.JWTIssuer)
+	if issuer == "" {
+		issuer = security.JWTIssuer
+	}
 
-	auth.POST("/login", authHandler.Login)
-	auth.POST("/refresh", authHandler.Refresh)
+	audience := strings.TrimSpace(cfg.JWTAudience)
+	if audience == "" {
+		audience = security.JWTAudience
+	}
 
-	// IMPORTANT:
-	// Logout remains an API POST endpoint.
-	auth.POST("/logout", authHandler.Logout)
-
-	auth.POST("/forgot-password", authHandler.ForgotPassword)
-	auth.POST("/reset-password", authHandler.ResetPassword)
-
-	// ============================================================
-	// PROTECTED API
-	// ============================================================
-
+	// Protected API: JWT authentication is required.
 	protected := api.Group("/protected")
-
 	protected.Use(
 		middleware.JWTAuthMiddleware(
 			middleware.JWTAuthConfig{
@@ -89,12 +98,9 @@ func Routes(
 		),
 	)
 
-	// ============================================================
-	// USER
-	// ============================================================
-
+	// Shared current-user endpoint.
+	// USER is the backend role displayed as Investigator in the UI.
 	userRoutes := protected.Group("/user")
-
 	userRoutes.Use(
 		middleware.RequireRoles(
 			models.RoleUser,
@@ -102,147 +108,87 @@ func Routes(
 			models.RoleAdmin,
 		),
 	)
-
 	userRoutes.GET("/me", userHandler.Me)
 
-	// ============================================================
-	// ANALYST
-	// ============================================================
-
+	// Analyst endpoints.
 	analystRoutes := protected.Group("/analyst")
-
 	analystRoutes.Use(
 		middleware.RequireRoles(
 			models.RoleAnalyst,
 			models.RoleAdmin,
 		),
 	)
-
 	analystRoutes.GET("/me", userHandler.Me)
 
-	// ============================================================
-	// ADMIN
-	// ============================================================
-
+	// Admin endpoints.
 	adminRoutes := protected.Group("/admin")
-
 	adminRoutes.Use(
-		middleware.RequireRoles(
-			models.RoleAdmin,
-		),
+		middleware.RequireRoles(models.RoleAdmin),
 	)
-
 	adminRoutes.GET("/me", userHandler.Me)
 
-	// ============================================================
-	// NEXT.JS FRONTEND
-	// ============================================================
-
+	// Initialize the Next.js reverse proxy.
 	nextHandler, err := newNextProxy(cfg.NextURL)
-
 	if err != nil {
-		return err
+		return fmt.Errorf("initialize Next.js proxy: %w", err)
 	}
 
-	// ============================================================
-	// IMPORTANT
-	// ============================================================
-	//
-	// We intentionally DO NOT create:
-	//
-	// router.GET("/logout", ...)
-	//
-	// because logout is handled by:
-	//
-	// POST /api/v1/auth/logout
-	//
-	// The dashboard frontend calls that endpoint directly.
-	//
-	// ============================================================
-
+	// Unknown API routes must return API 404 responses, not frontend pages.
+	// Other unmatched routes are served by Next.js.
 	router.NoRoute(nextHandler)
 
 	return nil
 }
 
-// ============================================================
-// NEXT.JS REVERSE PROXY
-// ============================================================
-
+// newNextProxy forwards unmatched frontend requests to Next.js.
 func newNextProxy(rawURL string) (gin.HandlerFunc, error) {
-
 	rawURL = strings.TrimSpace(rawURL)
-
 	if rawURL == "" {
-		return nil, fmt.Errorf("next.js url is empty")
+		return nil, fmt.Errorf("Next.js URL is empty")
 	}
 
 	target, err := url.Parse(rawURL)
-
 	if err != nil {
-		return nil, fmt.Errorf(
-			"invalid next.js url %q: %w",
-			rawURL,
-			err,
-		)
+		return nil, fmt.Errorf("invalid Next.js URL %q: %w", rawURL, err)
 	}
 
-	if target.Scheme == "" || target.Host == "" {
+	if (target.Scheme != "http" && target.Scheme != "https") ||
+		target.Host == "" ||
+		target.User != nil {
 		return nil, fmt.Errorf(
-			"invalid next.js url %q: need scheme and host",
+			"invalid Next.js URL %q: expected an HTTP(S) URL with a host",
 			rawURL,
 		)
 	}
 
-	log.Printf(
-		"proxying frontend requests to Next.js at %s",
-		target.String(),
-	)
+	log.Printf("proxying frontend requests to Next.js at %s", target.Redacted())
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
-
-	// ============================================================
-	// DIRECTOR
-	// ============================================================
-
 	originalDirector := proxy.Director
 
 	proxy.Director = func(req *http.Request) {
-
 		originalDirector(req)
 
-		// Preserve public host.
+		// Preserve the original public host only when supplied by a
+		// trusted reverse proxy. Configure trusted proxies at the Gin layer.
 		if host := req.Header.Get("X-Forwarded-Host"); host != "" {
 			req.Host = host
 		}
 
-		// Preserve original protocol.
 		if proto := req.Header.Get("X-Forwarded-Proto"); proto != "" {
-			req.Header.Set(
-				"X-Forwarded-Proto",
-				proto,
-			)
+			req.Header.Set("X-Forwarded-Proto", proto)
 		}
 
-		// Preserve original client IP.
-		if req.Header.Get("X-Forwarded-For") == "" {
-			req.Header.Set(
-				"X-Forwarded-For",
-				req.RemoteAddr,
-			)
+		if forwardedFor := req.Header.Get("X-Forwarded-For"); forwardedFor == "" {
+			req.Header.Set("X-Forwarded-For", req.RemoteAddr)
 		}
 	}
-
-	// ============================================================
-	// ERROR HANDLER
-	// ============================================================
 
 	proxy.ErrorHandler = func(
 		w http.ResponseWriter,
 		r *http.Request,
 		err error,
 	) {
-
 		log.Printf(
 			"Next.js proxy error: method=%s path=%s error=%v",
 			r.Method,
@@ -250,50 +196,21 @@ func newNextProxy(rawURL string) (gin.HandlerFunc, error) {
 			err,
 		)
 
-		w.Header().Set(
-			"Content-Type",
-			"application/json; charset=utf-8",
-		)
-
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusBadGateway)
-
-		_, _ = w.Write(
-			[]byte(`{"error":"frontend is not available"}`),
-		)
+		_, _ = w.Write([]byte(`{"error":"frontend is not available"}`))
 	}
 
-	// ============================================================
-	// FRONTEND HANDLER
-	// ============================================================
-
 	return func(c *gin.Context) {
-
 		path := c.Request.URL.Path
 
-		// ========================================================
-		// NEVER PROXY UNKNOWN API ROUTES TO NEXT.JS
-		// ========================================================
-
-		if path == "/api" ||
-			strings.HasPrefix(path, "/api/") {
-
-			c.JSON(
-				http.StatusNotFound,
-				gin.H{
-					"error": "API endpoint not found",
-				},
-			)
-
+		if path == "/api" || strings.HasPrefix(path, "/api/") {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "API endpoint not found",
+			})
 			return
 		}
 
-		// ========================================================
-		// FRONTEND REQUEST
-		// ========================================================
-
-		proxy.ServeHTTP(
-			c.Writer,
-			c.Request,
-		)
+		proxy.ServeHTTP(c.Writer, c.Request)
 	}, nil
 }

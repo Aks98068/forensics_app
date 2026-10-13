@@ -10,7 +10,7 @@ import (
 type UserRole string
 
 const (
-	RoleUser    UserRole = "USER"
+	RoleUser    UserRole = "INVESTIGATOR"
 	RoleAnalyst UserRole = "ANALYST"
 	RoleAdmin   UserRole = "ADMIN"
 )
@@ -24,7 +24,7 @@ const (
 )
 
 type User struct {
-	ID uuid.UUID `gorm:"type:char(36);primaryKey"`
+	ID uuid.UUID `gorm:"type:uuid;primaryKey"`
 
 	Email string `gorm:"type:varchar(255);uniqueIndex;not null"`
 
@@ -44,9 +44,9 @@ type User struct {
 
 	FailedLoginAttempts int `gorm:"not null;default:0"`
 
-	LockedUntil *time.Time `gorm:"null"`
+	LockedUntil *time.Time `gorm:"type:timestamptz"`
 
-	LastLoginAt *time.Time `gorm:"null"`
+	LastLoginAt *time.Time `gorm:"type:timestamptz"`
 
 	CreatedAt time.Time
 
@@ -64,19 +64,19 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 }
 
 type RefreshToken struct {
-	ID uuid.UUID `gorm:"type:char(36);primaryKey"`
+	ID uuid.UUID `gorm:"type:uuid;primaryKey"`
 
-	UserID uuid.UUID `gorm:"type:char(36);not null;index"`
+	UserID uuid.UUID `gorm:"type:uuid;not null;index"`
 
-	TokenHash string `gorm:"type:char(64);uniqueIndex;not null"`
+	TokenHash string `gorm:"type:varchar(64);uniqueIndex;not null"`
 
-	TokenFamily uuid.UUID `gorm:"type:char(36);not null;index"`
+	TokenFamily uuid.UUID `gorm:"type:uuid;not null;index"`
 
 	ExpiresAt time.Time `gorm:"not null;index"`
 
-	RevokedAt *time.Time `gorm:"null"`
+	RevokedAt *time.Time `gorm:"type:timestamptz"`
 
-	ReplacedByTokenID *uuid.UUID `gorm:"type:char(36);null;index"`
+	ReplacedByTokenID *uuid.UUID `gorm:"type:uuid;index"`
 
 	CreatedAt time.Time
 
@@ -100,12 +100,12 @@ func (r *RefreshToken) BeforeCreate(tx *gorm.DB) error {
 }
 
 type PasswordResetToken struct {
-	ID        uuid.UUID  `gorm:"type:char(36);primaryKey"`
-	UserID    uuid.UUID  `gorm:"type:char(36);not null;index"`
-	TokenHash string     `gorm:"type:char(64);uniqueIndex;not null"`
+	ID        uuid.UUID  `gorm:"type:uuid;primaryKey"`
+	UserID    uuid.UUID  `gorm:"type:uuid;not null;index"`
+	TokenHash string     `gorm:"type:varchar(64);uniqueIndex;not null"`
 	ExpiresAt time.Time  `gorm:"not null;index"`
-	UsedAt    *time.Time `gorm:"null"`
-	RevokedAt *time.Time `gorm:"null"`
+	UsedAt    *time.Time `gorm:"type:timestamptz"`
+	RevokedAt *time.Time `gorm:"type:timestamptz"`
 	CreatedAt time.Time
 
 	User User `gorm:"foreignKey:UserID;references:ID"`
@@ -120,12 +120,12 @@ func (p *PasswordResetToken) BeforeCreate(tx *gorm.DB) error {
 }
 
 type EmailVerificationToken struct {
-	ID        uuid.UUID  `gorm:"type:char(36);primaryKey"`
-	UserID    uuid.UUID  `gorm:"type:char(36);not null;index"`
-	TokenHash string     `gorm:"type:char(64);uniqueIndex;not null"`
+	ID        uuid.UUID  `gorm:"type:uuid;primaryKey"`
+	UserID    uuid.UUID  `gorm:"type:uuid;not null;index"`
+	TokenHash string     `gorm:"type:varchar(64);uniqueIndex;not null"`
 	ExpiresAt time.Time  `gorm:"not null;index"`
-	UsedAt    *time.Time `gorm:"null"`
-	RevokedAt *time.Time `gorm:"null"`
+	UsedAt    *time.Time `gorm:"type:timestamptz"`
+	RevokedAt *time.Time `gorm:"type:timestamptz"`
 	CreatedAt time.Time
 
 	User User `gorm:"foreignKey:UserID;references:ID"`

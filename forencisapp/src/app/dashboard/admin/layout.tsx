@@ -1,4 +1,3 @@
-
 import DashboardSidebar from "@/components/dashboard-sidebar";
 
 export default function AdminDashboardLayout({
@@ -13,14 +12,16 @@ export default function AdminDashboardLayout({
       <main
         className="
           min-h-screen
-          pt-[68px]
-          lg:pl-72
-          lg:pt-[76px]
+          min-w-0
+          pt-16
+          lg:ml-72
+          lg:pt-[72px]
         "
       >
-        {children}
+        <div className="min-w-0 p-4 sm:p-6 lg:p-8">
+          {children}
+        </div>
       </main>
     </div>
   );
 }
-

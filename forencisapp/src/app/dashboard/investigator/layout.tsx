@@ -1,4 +1,3 @@
-
 import DashboardSidebar from "@/components/dashboard-sidebar";
 
 export default function UserDashboardLayout({
@@ -8,19 +7,21 @@ export default function UserDashboardLayout({
 }) {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#F7F4EE]">
-      <DashboardSidebar role="user" />
+      <DashboardSidebar role="investigator" />
 
       <main
         className="
           min-h-screen
-          pt-[68px]
-          lg:pl-72
-          lg:pt-[76px]
+          min-w-0
+          pt-16
+          lg:ml-72
+          lg:pt-[72px]
         "
       >
-        {children}
+        <div className="min-w-0 p-4 sm:p-6 lg:p-8">
+          {children}
+        </div>
       </main>
     </div>
   );
 }
-

@@ -14,9 +14,9 @@ func MigrateDB(db *gorm.DB) error {
 		&models.PasswordResetToken{},
 		&models.EmailVerificationToken{},
 	)
-
 	if err != nil {
-		return fmt.Errorf("failed to migrate the database schema : %w", err)
+		return fmt.Errorf("failed to migrate the database schema: %w", err)
 	}
+
 	return nil
 }
