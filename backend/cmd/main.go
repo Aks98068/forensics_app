@@ -115,6 +115,8 @@ func main() {
 		userService,
 	)
 
+	investigatorHandler := handlres.NewInvestigatorHandler(nil)
+
 	router := gin.New()
 
 	router.Use(
@@ -156,6 +158,7 @@ func main() {
 		router,
 		authHandler,
 		userHandler,
+		investigatorHandler,
 		&routes.Config{
 			JWTAccessSecret: cfg.JWTAccessSecret,
 			JWTIssuer:       "forencis-api",

@@ -12,8 +12,6 @@ import (
 	middleware "github.com/Aks98068/forensics/internal/middlewares"
 	"github.com/Aks98068/forensics/internal/models"
 	"github.com/Aks98068/forensics/internal/security"
-	caseService "github.com/Aks98068/forensics/internal/service/case"
-	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,6 +27,7 @@ func Routes(
 	router *gin.Engine,
 	authHandler *handlres.AuthHandler,
 	userHandler *handlres.UserHandler,
+	investigatorHandler *handlres.InvestigatorHandler,
 	cfg *Config,
 ) error {
 	if router == nil {
@@ -128,7 +127,10 @@ func Routes(
 		middleware.RequireRoles(models.RoleAdmin),
 	)
 	adminRoutes.GET("/me", userHandler.Me)
-	adminRoutes.GET("/investigator/available", caseService.GetInvestigators(*gorm.DB))
+	adminRoutes.GET(
+		"/investigators/available",
+		investigatorHandler.GetAvailableInvestigators,
+	)
 
 	// Initialize the Next.js reverse proxy.
 	nextHandler, err := newNextProxy(cfg.NextURL)
