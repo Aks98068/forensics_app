@@ -1,7 +1,12 @@
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type ElementType,
+} from "react";
 import {
   UserRound,
   Mail,
@@ -15,6 +20,11 @@ import {
   AlertCircle,
   CheckCircle2,
   XCircle,
+  ArrowUpRight,
+  Activity,
+  LockKeyhole,
+  Copy,
+  Check,
 } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -41,9 +51,7 @@ function formatDate(value: string | null | undefined): string {
 
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
-    return "Not available";
-  }
+  if (Number.isNaN(date.getTime())) return "Not available";
 
   return new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
@@ -60,10 +68,31 @@ function getInitials(
   username: string
 ): string {
   const initials = (
-    firstName.trim().charAt(0) + lastName.trim().charAt(0)
+    firstName.trim().charAt(0) +
+    lastName.trim().charAt(0)
   ).toUpperCase();
 
   return initials || username.charAt(0).toUpperCase() || "U";
+}
+
+function statusClass(status: string): string {
+  switch (status.toUpperCase()) {
+    case "ACTIVE":
+    case "VERIFIED":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400";
+
+    case "PENDING":
+    case "NOT VERIFIED":
+      return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400";
+
+    case "SUSPENDED":
+    case "DISABLED":
+    case "INACTIVE":
+      return "border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400";
+
+    default:
+      return "border-[var(--border)] bg-[var(--surface-muted)] text-[var(--text-muted)]";
+  }
 }
 
 function InfoCard({
@@ -74,28 +103,58 @@ function InfoCard({
 }: {
   label: string;
   value: string;
-  icon: React.ElementType;
+  icon: ElementType;
   description?: string;
 }) {
   return (
-    <div className="group min-w-0 rounded-xl border border-[#E7E3DB] bg-white p-4 transition hover:border-[#F97316]/50 hover:shadow-sm sm:p-5">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F7F4EE] text-[#F97316]">
-          <Icon size={19} aria-hidden="true" />
+    <article className="group min-w-0 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 transition-colors duration-200 hover:border-[var(--accent)]/40 sm:p-5">
+      <div className="flex items-start gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-light)] text-[var(--accent)]">
+          <Icon size={17} aria-hidden="true" />
         </div>
 
-        <p className="text-sm font-medium text-gray-500">{label}</p>
+        <div className="min-w-0 flex-1 pt-0.5">
+          <p className="text-xs font-medium text-[var(--text-muted)]">
+            {label}
+          </p>
+
+          <p className="mt-1.5 break-words text-sm font-semibold leading-5 text-[var(--text)]">
+            {value}
+          </p>
+        </div>
       </div>
 
-      <p className="mt-4 break-words text-base font-semibold text-[#171A1F]">
-        {value}
-      </p>
-
       {description && (
-        <p className="mt-1 break-words text-xs text-gray-500">
+        <p className="mt-3 border-t border-[var(--border)] pt-3 text-xs leading-5 text-[var(--text-muted)]">
           {description}
         </p>
       )}
+    </article>
+  );
+}
+
+function SectionHeading({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="mb-4">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--accent)]">
+        {eyebrow}
+      </p>
+
+      <h2 className="mt-1 text-lg font-semibold tracking-tight text-[var(--text)]">
+        {title}
+      </h2>
+
+      <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">
+        {description}
+      </p>
     </div>
   );
 }
@@ -105,6 +164,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const fetchProfile = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
@@ -124,7 +184,6 @@ export default function ProfilePage() {
         );
       }
 
-      // Correct endpoint: GET /api/v1/protected/user/me
       const response = await fetch(
         `${API_BASE}/api/v1/protected/user/me`,
         {
@@ -153,7 +212,7 @@ export default function ProfilePage() {
 
         if (response.status === 404) {
           throw new Error(
-            "The profile API endpoint was not found. Check the deployed backend route."
+            "Profile API endpoint not found. Check the backend route."
           );
         }
 
@@ -162,15 +221,15 @@ export default function ProfilePage() {
         );
       }
 
-      const data: ProfileResponse = await response.json();
+      const result: ProfileResponse = await response.json();
 
-      if (!data.user) {
+      if (!result.user) {
         throw new Error(
           "The API response does not contain a user object."
         );
       }
 
-      setUser(data.user);
+      setUser(result.user);
     } catch (err) {
       setError(
         err instanceof Error
@@ -187,6 +246,19 @@ export default function ProfilePage() {
     void fetchProfile();
   }, [fetchProfile]);
 
+  const copyIdentifier = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      await navigator.clipboard.writeText(user.id);
+      setCopied(true);
+
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setError("Unable to copy the account identifier.");
+    }
+  }, [user?.id]);
+
   const fullName = user
     ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim() ||
       user.username
@@ -196,24 +268,35 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-[60vh] items-center justify-center bg-[#F7F4EE] px-4">
-        <div
-          className="flex flex-col items-center gap-4 text-center"
-          role="status"
-          aria-live="polite"
-        >
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#171A1F] text-[#F97316]">
-            <RefreshCw size={25} className="animate-spin" />
+      <main className="min-h-screen bg-[var(--surface-muted)] px-4 py-8 sm:px-6 lg:px-7">
+        <div className="mx-auto max-w-6xl">
+          <div className="animate-pulse space-y-6">
+            <div className="space-y-2">
+              <div className="h-3 w-28 rounded bg-[var(--border)]" />
+              <div className="h-8 w-56 rounded bg-[var(--border)]" />
+              <div className="h-4 w-72 max-w-full rounded bg-[var(--border)]" />
+            </div>
+
+            <div className="h-48 rounded-xl border border-[var(--border)] bg-[var(--surface)]" />
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="h-28 rounded-xl border border-[var(--border)] bg-[var(--surface)]"
+                />
+              ))}
+            </div>
           </div>
 
-          <div>
-            <p className="font-semibold text-[#171A1F]">
-              Loading your profile
-            </p>
-            <p className="mt-1 text-sm text-gray-500">
-              Retrieving your account information...
-            </p>
-          </div>
+          <p
+            className="mt-6 flex items-center gap-2 text-sm text-[var(--text-muted)]"
+            role="status"
+            aria-live="polite"
+          >
+            <RefreshCw size={15} className="animate-spin" />
+            Loading account information...
+          </p>
         </div>
       </main>
     );
@@ -221,25 +304,26 @@ export default function ProfilePage() {
 
   if (error && !user) {
     return (
-      <main className="min-h-[60vh] bg-[#F7F4EE] px-4 py-12 sm:px-8">
-        <div className="mx-auto max-w-xl rounded-2xl border border-red-200 bg-white p-6 text-center sm:p-8">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-red-600">
-            <AlertCircle size={28} />
+      <main className="min-h-screen bg-[var(--surface-muted)] px-4 py-10 sm:px-6 lg:px-7">
+        <div className="mx-auto max-w-lg rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400">
+            <AlertCircle size={22} />
           </div>
 
-          <h1 className="mt-4 text-xl font-bold text-[#171A1F]">
+          <h1 className="mt-4 text-xl font-semibold text-[var(--text)]">
             Unable to load profile
           </h1>
 
-          <p className="mt-2 break-words text-sm leading-6 text-gray-600">
+          <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
             {error}
           </p>
 
           <button
+            type="button"
             onClick={() => void fetchProfile()}
-            className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#171A1F] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2b3038] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F97316] focus-visible:ring-offset-2"
+            className="mt-6 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           >
-            <RefreshCw size={16} />
+            <RefreshCw size={15} />
             Try again
           </button>
         </div>
@@ -250,53 +334,59 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <main className="min-h-screen bg-[#F7F4EE] px-4 py-6 text-[#171A1F] sm:px-6 sm:py-8 lg:px-10">
-      <div className="mx-auto w-full max-w-6xl space-y-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[#0F766E]">
-              <ShieldCheck size={16} />
-              FORENSIQ / Account
+    <main className="min-h-screen bg-[var(--surface)] px-4 py-6 text-[var(--text)] sm:px-6 sm:py-8 lg:px-7">
+      <div className="mx-auto w-full max-w-6xl space-y-7">
+
+        {/* Page header */}
+        <header className="flex flex-col gap-4 border-b border-[var(--border)] pb-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-muted)]">
+              <UserRound size={14} />
+              <span>Account</span>
+              <span>/</span>
+              <span className="text-[var(--accent)]">My Profile</span>
             </div>
 
-            <h1 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">
+            <h1 className="mt-2 text-2xl font-bold tracking-tight text-[var(--text)] sm:text-3xl">
               My Profile
             </h1>
 
-            <p className="mt-2 max-w-xl text-sm leading-6 text-gray-600 sm:text-base">
-              View your identity, account information, and security status.
+            <p className="mt-1.5 max-w-xl text-sm leading-6 text-[var(--text-muted)]">
+              Manage your identity details and review your account security.
             </p>
           </div>
 
           <button
+            type="button"
             onClick={() => void fetchProfile(true)}
             disabled={refreshing}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 self-start rounded-lg border border-[#DCD7CD] bg-white px-4 py-2.5 text-sm font-semibold transition hover:border-[#F97316] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:self-auto"
+            className="inline-flex min-h-10 items-center justify-center gap-2 self-start rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-sm font-medium text-[var(--text)] transition hover:border-[var(--accent)]/50 hover:bg-[var(--surface-muted)] disabled:cursor-not-allowed disabled:opacity-60 sm:self-auto"
           >
             <RefreshCw
-              size={16}
+              size={15}
               className={refreshing ? "animate-spin" : ""}
             />
-            {refreshing ? "Refreshing..." : "Refresh profile"}
+            {refreshing ? "Refreshing..." : "Refresh"}
           </button>
         </header>
 
         {error && (
           <div
             role="alert"
-            className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+            className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300"
           >
-            <AlertCircle size={19} className="mt-0.5 shrink-0" />
+            <AlertCircle size={18} className="mt-0.5 shrink-0" />
             <p>{error}</p>
           </div>
         )}
 
-        <section className="overflow-hidden rounded-2xl border border-[#272C35] bg-[#171A1F] text-white shadow-sm">
-          <div className="h-1.5 bg-gradient-to-r from-[#F97316] via-[#EA580C] to-[#0F766E]" />
+        {/* Identity panel */}
+        <section className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+          <div className="flex h-1 bg-[var(--accent)]" />
 
-          <div className="flex flex-col gap-6 p-5 sm:p-8 md:flex-row md:items-center md:justify-between">
-            <div className="flex min-w-0 items-center gap-4 sm:gap-6">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-[#F97316] text-xl font-bold text-white sm:h-24 sm:w-24 sm:rounded-3xl sm:text-3xl">
+          <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-center lg:p-7">
+            <div className="flex min-w-0 items-start gap-4 sm:items-center sm:gap-5">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-light)] text-xl font-bold text-[var(--accent)] ring-1 ring-inset ring-[var(--accent)]/10 sm:h-[76px] sm:w-[76px] sm:text-2xl">
                 {getInitials(
                   user.first_name,
                   user.last_name,
@@ -305,74 +395,88 @@ export default function ProfilePage() {
               </div>
 
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
-                  Authenticated user
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                  Account identity
                 </p>
 
-                <h2 className="mt-2 break-words text-xl font-bold sm:text-2xl lg:text-3xl">
+                <h2 className="mt-1.5 break-words text-xl font-bold tracking-tight text-[var(--text)] sm:text-2xl">
                   {fullName}
                 </h2>
 
-                <p className="mt-1 break-all text-sm text-gray-400">
+                <p className="mt-1 break-all text-sm text-[var(--text-muted)]">
                   @{user.username}
                 </p>
 
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#F97316]/30 bg-[#F97316]/10 px-3 py-1 text-xs font-semibold text-orange-300">
-                    <ShieldCheck size={14} />
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--surface-muted)] px-2.5 py-1 text-xs font-medium text-[var(--text)]">
+                    <ShieldCheck size={13} className="text-[var(--accent)]" />
                     {user.role}
                   </span>
 
                   <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-                      isActive
-                        ? "bg-emerald-400/10 text-emerald-300"
-                        : "bg-red-400/10 text-red-300"
-                    }`}
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium ${statusClass(user.status)}`}
                   >
                     <span
                       className={`h-1.5 w-1.5 rounded-full ${
-                        isActive ? "bg-emerald-400" : "bg-red-400"
+                        isActive ? "bg-emerald-500" : "bg-current"
                       }`}
                     />
                     {user.status}
                   </span>
+
+                  {user.email_verified && (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
+                      <BadgeCheck size={13} />
+                      Verified
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.04] p-4 md:max-w-64">
-              <div className="flex items-center gap-2 text-gray-400">
-                <Fingerprint
-                  size={18}
-                  className="shrink-0 text-[#F97316]"
-                />
-                <span className="text-xs font-semibold uppercase tracking-wider">
-                  Account identifier
-                </span>
+            {/* Account identifier */}
+            <div className="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2">
+                  <Fingerprint size={17} className="shrink-0 text-[var(--accent)]" />
+                  <span className="text-xs font-semibold text-[var(--text-muted)]">
+                    Account identifier
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => void copyIdentifier()}
+                  title="Copy account identifier"
+                  aria-label="Copy account identifier"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] transition hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                >
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                </button>
               </div>
 
-              <p
-                className="mt-2 break-all font-mono text-xs leading-5 text-gray-200"
-                title={user.id}
-              >
+              <p className="mt-3 break-all font-mono text-xs leading-5 text-[var(--text)]">
                 {user.id}
               </p>
+
+              {copied && (
+                <p className="mt-2 text-xs font-medium text-emerald-600">
+                  Identifier copied
+                </p>
+              )}
             </div>
           </div>
         </section>
 
+        {/* Personal information */}
         <section>
-          <div className="mb-4">
-            <h2 className="text-lg font-bold sm:text-xl">
-              Personal information
-            </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Your profile details returned by the API.
-            </p>
-          </div>
+          <SectionHeading
+            eyebrow="Identity"
+            title="Personal Information"
+            description="Your registered account details."
+          />
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             <InfoCard
               label="First name"
               value={user.first_name || "Not provided"}
@@ -395,96 +499,106 @@ export default function ProfilePage() {
               label="Email address"
               value={user.email || "Not provided"}
               icon={Mail}
+              description="Registered email address"
             />
 
             <InfoCard
               label="Account role"
               value={user.role || "Not assigned"}
               icon={ShieldCheck}
-              description="Your assigned platform role"
+              description="Your assigned platform permissions"
             />
 
             <InfoCard
               label="Account status"
               value={user.status || "Unknown"}
-              icon={BadgeCheck}
+              icon={Activity}
               description={
                 isActive
-                  ? "Your account is marked active"
-                  : "Check your account status if access is restricted"
+                  ? "Your account is marked active."
+                  : "Contact your administrator if access is restricted."
               }
             />
           </div>
         </section>
 
-        <section className="rounded-2xl border border-[#E7E3DB] bg-white p-5 sm:p-7">
-          <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#E6F3EF] text-[#0F766E]">
-              <ShieldCheck size={23} />
+        {/* Security and verification */}
+        <section className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+          <div className="flex items-center gap-3 border-b border-[var(--border)] px-5 py-4 sm:px-6">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--accent-light)] text-[var(--accent)]">
+              <LockKeyhole size={18} />
             </div>
 
             <div>
-              <h2 className="text-lg font-bold sm:text-xl">
-                Security &amp; verification
+              <h2 className="text-base font-semibold text-[var(--text)]">
+                Security &amp; Verification
               </h2>
-              <p className="mt-1 text-sm text-gray-500">
-                Review your account verification information.
+              <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+                Review the verification status of your account.
               </p>
             </div>
           </div>
 
-          <div className="mt-6 flex flex-col justify-between gap-4 rounded-xl border border-[#E7E3DB] p-4 sm:flex-row sm:items-center sm:p-5">
-            <div className="flex items-start gap-3">
-              {user.email_verified ? (
-                <CheckCircle2
-                  size={22}
-                  className="mt-0.5 shrink-0 text-[#0F766E]"
-                />
-              ) : (
-                <XCircle
-                  size={22}
-                  className="mt-0.5 shrink-0 text-orange-600"
-                />
-              )}
+          <div className="p-4 sm:p-5">
+            <div className="flex flex-col gap-4 rounded-lg border border-[var(--border)] p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                    user.email_verified
+                      ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
+                      : "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400"
+                  }`}
+                >
+                  {user.email_verified ? (
+                    <CheckCircle2 size={19} />
+                  ) : (
+                    <XCircle size={19} />
+                  )}
+                </div>
 
-              <div>
-                <p className="font-semibold">Email verification</p>
-                <p className="mt-1 text-sm text-gray-500">
-                  {user.email_verified
-                    ? "Your email address is verified."
-                    : "Your email address is not verified."}
-                </p>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[var(--text)]">
+                    Email verification
+                  </p>
+
+                  <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">
+                    {user.email_verified
+                      ? "Your email address has been verified."
+                      : "Your email address has not been verified."}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <span
-              className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
-                user.email_verified
-                  ? "bg-[#E6F3EF] text-[#0F766E]"
-                  : "bg-orange-50 text-orange-700"
-              }`}
-            >
-              {user.email_verified ? "Verified" : "Not verified"}
-            </span>
+              <span
+                className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold ${statusClass(
+                  user.email_verified ? "VERIFIED" : "NOT VERIFIED"
+                )}`}
+              >
+                {user.email_verified ? (
+                  <CheckCircle2 size={13} />
+                ) : (
+                  <AlertCircle size={13} />
+                )}
+                {user.email_verified ? "Verified" : "Not verified"}
+              </span>
+            </div>
           </div>
         </section>
 
+        {/* Account activity */}
         <section>
-          <div className="mb-4">
-            <h2 className="text-lg font-bold sm:text-xl">
-              Account activity
-            </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Important dates associated with your account.
-            </p>
-          </div>
+          <SectionHeading
+            eyebrow="Account history"
+            title="Account Activity"
+            description="Important timestamps recorded by the backend."
+          />
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <InfoCard
               label="Account created"
               value={formatDate(user.created_at)}
               icon={CalendarDays}
-              description="Date and time your account was created"
+              description="When your account was registered"
             />
 
             <InfoCard
@@ -500,17 +614,29 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        <div className="flex items-start gap-3 rounded-xl border border-[#E7E3DB] bg-white/70 p-4">
-          <ShieldCheck
-            size={19}
-            className="mt-0.5 shrink-0 text-[#0F766E]"
-          />
-          <p className="text-xs leading-5 text-gray-500 sm:text-sm">
-            Profile information is retrieved from the FORENSIQ backend.
-            Account changes and security permissions should be validated
-            by the server.
-          </p>
-        </div>
+        {/* Security note */}
+        <footer className="flex items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-light)] text-[var(--accent)]">
+            <ShieldCheck size={18} />
+          </div>
+
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-[var(--text)]">
+              Your account security
+            </h3>
+
+            <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
+              Profile details are retrieved from the FORENSIQ backend.
+              Account permissions and security-sensitive changes must be
+              validated by the server.
+            </p>
+
+            <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+              <ArrowUpRight size={13} />
+              Account information is displayed using the current session.
+            </p>
+          </div>
+        </footer>
       </div>
     </main>
   );

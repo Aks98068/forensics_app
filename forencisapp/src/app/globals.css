@@ -1,33 +1,253 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* =========================================================
+   FORENSIQ — Digital Forensics Platform
+   Warm forensic paper + charcoal + orange + teal
+   ========================================================= */
 
 :root {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+    color-scheme: light;
+    --background: #f7f4ee;
+    --foreground: #24262b;
+    --primary: #171a1f;
+    --primary-light: #252a31;
+    --primary-dark: #101216;
+    --accent: #f97316;
+    --accent-hover: #ea580c;
+    --accent-light: #fff0e3;
+    --secondary: #0f766e;
+    --secondary-light: #dff5ef;
+    --muted: #6b7280;
+    --text: #24262b;
+    --text-muted: #737780;
+    --border: #e7e1d8;
+    --surface: #ffffff;
+    --surface-muted: #f0ede7;
+    --success: #15803d;
+    --success-light: #dcfce7;
+    --warning: #b45309;
+    --warning-light: #fef3c7;
+    --danger: #b91c1c;
+    --danger-light: #fee2e2;
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-primary: var(--primary);
+    --color-accent: var(--accent);
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    background: var(--background);
+    color: var(--text);
+    font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-.navbarcss{
-  width: 100%;
-  height: 15vh;
-  background-color: var(--background);
-  position:static;
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+
+/* =========================================================
+   SHARED DASHBOARD COMPONENTS
+   ========================================================= */
+
+.forensic-page {
+    min-height: 100vh;
+    background: var(--background);
+    color: var(--text);
+}
+
+.forensic-page-header {
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    padding: 1.5rem;
+}
+
+.forensic-eyebrow {
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.forensic-title {
+    margin-top: 0.4rem;
+    color: var(--primary);
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+}
+
+.forensic-description {
+    margin-top: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    line-height: 1.7;
+}
+
+.forensic-card {
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: var(--surface);
+    box-shadow: 0 2px 8px rgb(23 26 31 / 4%);
+    transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.forensic-card-interactive:hover {
+    transform: translateY(-2px);
+    border-color: #f7b27f;
+    box-shadow: 0 10px 28px rgb(23 26 31 / 8%);
+}
+
+.forensic-section-title {
+    color: var(--primary);
+    font-size: 1rem;
+    font-weight: 750;
+}
+
+.forensic-muted {
+    color: var(--text-muted);
+}
+
+.forensic-divider {
+    border-color: var(--border);
+}
+
+
+/* Primary action */
+
+.forensic-button-primary {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid var(--accent);
+    border-radius: 0.65rem;
+    background: var(--accent);
+    padding: 0.65rem 1rem;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: background 180ms ease;
+}
+
+.forensic-button-primary:hover {
+    background: var(--accent-hover);
+}
+
+
+/* Secondary action */
+
+.forensic-button-secondary {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 0.65rem;
+    background: var(--surface);
+    padding: 0.65rem 1rem;
+    color: var(--primary);
+    font-size: 0.875rem;
+    font-weight: 650;
+    transition: background 180ms ease, border-color 180ms ease;
+}
+
+.forensic-button-secondary:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+}
+
+
+/* Status badges */
+
+.forensic-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.7rem;
+    font-weight: 750;
+    line-height: 1.2;
+}
+
+.forensic-status-success {
+    background: var(--success-light);
+    color: var(--success);
+}
+
+.forensic-status-warning {
+    background: var(--warning-light);
+    color: var(--warning);
+}
+
+.forensic-status-danger {
+    background: var(--danger-light);
+    color: var(--danger);
+}
+
+.forensic-status-info {
+    background: var(--secondary-light);
+    color: var(--secondary);
+}
+
+.forensic-status-neutral {
+    background: var(--surface-muted);
+    color: var(--muted);
+}
+
+
+/* Dashboard loading skeletons */
+
+.forensic-skeleton {
+    animation: forensic-pulse 1.5s ease-in-out infinite;
+    border-radius: 0.65rem;
+    background: #e8e3db;
+}
+
+@keyframes forensic-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.45;
+    }
+}
+
+
+/* Accessible focus states */
+
+:focus-visible {
+    outline: 3px solid rgb(249 115 22 / 55%);
+    outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
